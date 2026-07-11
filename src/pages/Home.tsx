@@ -4,6 +4,7 @@ import { itinerary } from "../data/itinerary";
 import { restaurants } from "../data/restaurants";
 import { theme } from "../styles/theme";
 import { getAppDate } from "../utils/travelClock";
+import UpcomingBooking from "../components/UpcomingBooking";
 
 type HomeProps = {
   onNavigate: (tab: Tab) => void;
@@ -330,6 +331,7 @@ function Home({ onNavigate }: HomeProps) {
           )}
         </div>
       </section>
+      <UpcomingBooking />
 
       <section
         style={{
