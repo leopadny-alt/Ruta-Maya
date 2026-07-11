@@ -17,6 +17,7 @@ import PreTripCheck from "./PreTripCheck";
 import PrivateTravelData from "./PrivateTravelData";
 import DocumentVault from "./DocumentVault";
 import DailyAgenda from "./DailyAgenda";
+import TravelerProfile from "./TravelerProfile";
 import { theme } from "../styles/theme";
 
 type MoreSection =
@@ -38,9 +39,16 @@ type MoreSection =
   | "pretrip"
   | "private-data"
   | "documents"
-  | "agenda";
+  | "agenda"
+  | "profile";
 
 const menuItems = [
+  {
+  id: "profile",
+  icon: "👤",
+  title: "Il mio profilo",
+  subtitle: "Personalizza questo dispositivo",
+},
   {
     id: "accommodations",
     icon: "🏨",
@@ -199,6 +207,7 @@ function More() {
     "private-data": <PrivateTravelData />,
     documents: <DocumentVault />,
     agenda: <DailyAgenda />,
+    profile: <TravelerProfile />,
   };
 
   if (section !== "menu") {

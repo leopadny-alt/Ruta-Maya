@@ -1,5 +1,6 @@
 import { bookingSchedule } from "../data/bookingSchedule";
 import { getAppDate } from "../utils/travelClock";
+import { getTravelerProfile } from "../utils/travelerProfile";
 import { theme } from "../styles/theme";
 
 function formatDateTime(value: string) {
@@ -24,13 +25,13 @@ function getTimeRemaining(target: Date, now: Date) {
   );
 
   const days = Math.floor(totalMinutes / 1440);
-  const hours = Math.floor(
-    (totalMinutes % 1440) / 60,
-  );
+  const hours = Math.floor((totalMinutes % 1440) / 60);
   const minutes = totalMinutes % 60;
 
   if (days > 0) {
-    return `Tra ${days} ${days === 1 ? "giorno" : "giorni"} e ${hours} h`;
+    return `Tra ${days} ${
+      days === 1 ? "giorno" : "giorni"
+    } e ${hours} h`;
   }
 
   if (hours > 0) {
@@ -42,12 +43,26 @@ function getTimeRemaining(target: Date, now: Date) {
 
 function UpcomingBooking() {
   const now = getAppDate();
+  const traveler = getTravelerProfile();
 
-  const nextBooking = bookingSchedule.find(
-    (booking) =>
-      new Date(booking.dateTime).getTime() >=
-      now.getTime(),
+  const eligibleBookings = bookingSchedule.filter(
+    (booking) => {
+      const isFuture =
+        new Date(booking.dateTime).getTime() >= now.getTime();
+
+      if (!isFuture) {
+        return false;
+      }
+
+      if (!traveler) {
+        return true;
+      }
+
+      return booking.travelers.includes(traveler);
+    },
   );
+
+  const nextBooking = eligibleBookings[0];
 
   if (!nextBooking) {
     return null;
@@ -66,18 +81,42 @@ function UpcomingBooking() {
         boxShadow: "0 15px 34px rgba(0,0,0,0.18)",
       }}
     >
-      <p
+      <div
         style={{
-          margin: 0,
-          color: "#6ED4FF",
-          fontSize: 12,
-          fontWeight: 850,
-          letterSpacing: 1,
-          textTransform: "uppercase",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
         }}
       >
-        Prossima prenotazione
-      </p>
+        <p
+          style={{
+            margin: 0,
+            color: "#6ED4FF",
+            fontSize: 12,
+            fontWeight: 850,
+            letterSpacing: 1,
+            textTransform: "uppercase",
+          }}
+        >
+          Prossima prenotazione
+        </p>
+
+        {traveler && (
+          <span
+            style={{
+              padding: "5px 8px",
+              borderRadius: 999,
+              background: "rgba(72,184,232,0.13)",
+              color: "#6ED4FF",
+              fontSize: 10,
+              fontWeight: 800,
+            }}
+          >
+            Per {traveler}
+          </span>
+        )}
+      </div>
 
       <div
         style={{
@@ -160,6 +199,20 @@ function UpcomingBooking() {
       >
         👥 {nextBooking.travelers.join(", ")}
       </p>
+
+      {!traveler && (
+        <p
+          style={{
+            margin: "11px 0 0",
+            color: theme.colors.secondary,
+            fontSize: 11,
+            lineHeight: 1.45,
+          }}
+        >
+          Seleziona “Il mio profilo” per personalizzare le
+          prenotazioni mostrate su questo telefono.
+        </p>
+      )}
     </section>
   );
 }
