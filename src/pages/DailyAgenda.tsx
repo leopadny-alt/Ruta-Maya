@@ -7,6 +7,7 @@ import {
 import { itinerary } from "../data/itinerary";
 import { roadTrip } from "../data/roadTrip";
 import { getAppDate } from "../utils/travelClock";
+import { getTravelerProfile } from "../utils/travelerProfile";
 import { theme } from "../styles/theme";
 
 const TRIP_START_DATE = "2026-08-06";
@@ -30,13 +31,14 @@ function getInitialDay() {
     `${TRIP_START_DATE}T00:00:00`,
   );
 
+  const currentDate = new Date(
+    appDate.getFullYear(),
+    appDate.getMonth(),
+    appDate.getDate(),
+  );
+
   const difference = Math.floor(
-    (new Date(
-      appDate.getFullYear(),
-      appDate.getMonth(),
-      appDate.getDate(),
-    ).getTime() -
-      startDate.getTime()) /
+    (currentDate.getTime() - startDate.getTime()) /
       (1000 * 60 * 60 * 24),
   );
 
@@ -85,6 +87,8 @@ function DailyAgenda() {
   const [selectedDay, setSelectedDay] =
     useState(getInitialDay());
 
+  const traveler = getTravelerProfile();
+
   const currentDay =
     itinerary.find((day) => day.day === selectedDay) ??
     itinerary[0];
@@ -93,15 +97,26 @@ function DailyAgenda() {
 
   const dailyBookings = useMemo(() => {
     return bookingSchedule
-      .filter((booking) =>
-        booking.dateTime.startsWith(selectedDate),
-      )
+      .filter((booking) => {
+        const matchesDate =
+          booking.dateTime.startsWith(selectedDate);
+
+        if (!matchesDate) {
+          return false;
+        }
+
+        if (!traveler) {
+          return true;
+        }
+
+        return booking.travelers.includes(traveler);
+      })
       .sort(
         (firstBooking, secondBooking) =>
           new Date(firstBooking.dateTime).getTime() -
           new Date(secondBooking.dateTime).getTime(),
       );
-  }, [selectedDate]);
+  }, [selectedDate, traveler]);
 
   const dailyRoadTrip = useMemo(() => {
     return roadTrip.filter(
@@ -125,27 +140,57 @@ function DailyAgenda() {
           "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       }}
     >
-      <p
+      <div
         style={{
-          margin: 0,
-          color: theme.colors.primary,
-          fontSize: 13,
-          fontWeight: 850,
-          letterSpacing: 1.2,
-          textTransform: "uppercase",
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 14,
         }}
       >
-        Programma quotidiano
-      </p>
+        <div>
+          <p
+            style={{
+              margin: 0,
+              color: theme.colors.primary,
+              fontSize: 13,
+              fontWeight: 850,
+              letterSpacing: 1.2,
+              textTransform: "uppercase",
+            }}
+          >
+            Programma quotidiano
+          </p>
 
-      <h1
-        style={{
-          margin: "8px 0 6px",
-          fontSize: 34,
-        }}
-      >
-        Agenda del giorno
-      </h1>
+          <h1
+            style={{
+              margin: "8px 0 6px",
+              fontSize: 34,
+            }}
+          >
+            Agenda del giorno
+          </h1>
+        </div>
+
+        {traveler && (
+          <span
+            style={{
+              flexShrink: 0,
+              marginTop: 3,
+              padding: "8px 11px",
+              borderRadius: 999,
+              background: "rgba(17,197,191,0.14)",
+              border:
+                "1px solid rgba(17,197,191,0.22)",
+              color: theme.colors.primary,
+              fontSize: 11,
+              fontWeight: 850,
+            }}
+          >
+            👤 {traveler}
+          </span>
+        )}
+      </div>
 
       <p
         style={{
@@ -157,6 +202,25 @@ function DailyAgenda() {
         Attività, prenotazioni e spostamenti riuniti in una sola
         schermata.
       </p>
+
+      {!traveler && (
+        <div
+          style={{
+            marginTop: 17,
+            padding: 14,
+            borderRadius: 17,
+            background: "rgba(244,213,141,0.08)",
+            border:
+              "1px solid rgba(244,213,141,0.18)",
+            color: theme.colors.secondary,
+            fontSize: 12,
+            lineHeight: 1.5,
+          }}
+        >
+          👤 Nessun profilo selezionato: vengono mostrate le
+          prenotazioni di tutto il gruppo.
+        </div>
+      )}
 
       <div
         style={{
@@ -228,7 +292,8 @@ function DailyAgenda() {
           borderRadius: 26,
           background:
             "linear-gradient(135deg, rgba(17,197,191,0.96), rgba(14,79,111,0.94))",
-          boxShadow: "0 19px 42px rgba(0,0,0,0.25)",
+          boxShadow:
+            "0 19px 42px rgba(0,0,0,0.25)",
         }}
       >
         <div
@@ -288,7 +353,11 @@ function DailyAgenda() {
         <section style={{ marginTop: 25 }}>
           <SectionHeading
             icon="🎫"
-            title="Orari confermati"
+            title={
+              traveler
+                ? `Orari confermati per ${traveler}`
+                : "Orari confermati"
+            }
             count={dailyBookings.length}
           />
 
@@ -324,87 +393,92 @@ function DailyAgenda() {
             marginTop: 14,
           }}
         >
-          {currentDay.activities.map((activity, index) => {
-            const isLast =
-              index === currentDay.activities.length - 1;
+          {currentDay.activities.map(
+            (activity, index) => {
+              const isLast =
+                index ===
+                currentDay.activities.length - 1;
 
-            return (
-              <div
-                key={activity}
-                style={{
-                  position: "relative",
-                  display: "grid",
-                  gridTemplateColumns: "42px 1fr",
-                  gap: 12,
-                  minHeight: 78,
-                }}
-              >
+              return (
                 <div
+                  key={activity}
                   style={{
                     position: "relative",
-                    display: "flex",
-                    justifyContent: "center",
+                    display: "grid",
+                    gridTemplateColumns: "42px 1fr",
+                    gap: 12,
+                    minHeight: 78,
                   }}
                 >
-                  {!isLast && (
-                    <span
-                      style={{
-                        position: "absolute",
-                        top: 34,
-                        bottom: -4,
-                        width: 2,
-                        background:
-                          "rgba(17,197,191,0.20)",
-                      }}
-                    />
-                  )}
-
-                  <span
+                  <div
                     style={{
                       position: "relative",
-                      zIndex: 1,
-                      width: 32,
-                      height: 32,
-                      display: "grid",
-                      placeItems: "center",
-                      borderRadius: 11,
-                      background:
-                        "rgba(17,197,191,0.15)",
-                      border:
-                        "1px solid rgba(17,197,191,0.22)",
-                      color: theme.colors.primary,
-                      fontSize: 12,
-                      fontWeight: 900,
+                      display: "flex",
+                      justifyContent: "center",
                     }}
                   >
-                    {index + 1}
-                  </span>
-                </div>
+                    {!isLast && (
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: 34,
+                          bottom: -4,
+                          width: 2,
+                          background:
+                            "rgba(17,197,191,0.20)",
+                        }}
+                      />
+                    )}
 
-                <article
-                  style={{
-                    marginBottom: isLast ? 0 : 11,
-                    padding: 15,
-                    borderRadius: 18,
-                    background: theme.colors.card,
-                    border:
-                      "1px solid rgba(255,255,255,0.08)",
-                  }}
-                >
-                  <p
+                    <span
+                      style={{
+                        position: "relative",
+                        zIndex: 1,
+                        width: 32,
+                        height: 32,
+                        display: "grid",
+                        placeItems: "center",
+                        borderRadius: 11,
+                        background:
+                          "rgba(17,197,191,0.15)",
+                        border:
+                          "1px solid rgba(17,197,191,0.22)",
+                        color:
+                          theme.colors.primary,
+                        fontSize: 12,
+                        fontWeight: 900,
+                      }}
+                    >
+                      {index + 1}
+                    </span>
+                  </div>
+
+                  <article
                     style={{
-                      margin: 0,
-                      color: theme.colors.textSoft,
-                      fontSize: 14,
-                      lineHeight: 1.5,
+                      marginBottom: isLast ? 0 : 11,
+                      padding: 15,
+                      borderRadius: 18,
+                      background: theme.colors.card,
+                      border:
+                        "1px solid rgba(255,255,255,0.08)",
                     }}
                   >
-                    {activity}
-                  </p>
-                </article>
-              </div>
-            );
-          })}
+                    <p
+                      style={{
+                        margin: 0,
+                        color:
+                          theme.colors.textSoft,
+                        fontSize: 14,
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {activity}
+                    </p>
+                  </article>
+                </div>
+              );
+            },
+          )}
         </div>
       </section>
 
@@ -501,7 +575,8 @@ function DailyAgenda() {
             padding: 19,
             borderRadius: 22,
             background: theme.colors.card,
-            border: "1px solid rgba(255,184,107,0.22)",
+            border:
+              "1px solid rgba(255,184,107,0.22)",
           }}
         >
           <p
@@ -533,7 +608,8 @@ function DailyAgenda() {
               fontSize: 13,
             }}
           >
-            {accommodation.dates} · {accommodation.nights}
+            {accommodation.dates} ·{" "}
+            {accommodation.nights}
           </p>
 
           <div
@@ -564,7 +640,8 @@ function DailyAgenda() {
               rel="noreferrer"
               style={{
                 ...linkButtonStyle,
-                background: theme.colors.primary,
+                background:
+                  theme.colors.primary,
               }}
             >
               Google Maps
@@ -581,7 +658,7 @@ function DailyAgenda() {
           lineHeight: 1.5,
         }}
       >
-        Gli orari mostrati nelle card azzurre derivano dalle
+        Gli orari nelle card azzurre derivano dalle
         prenotazioni confermate. Le altre attività restano
         flessibili e possono essere adattate durante il viaggio.
       </p>
@@ -600,8 +677,10 @@ function ConfirmedBookingCard({
         padding: 17,
         borderRadius: 21,
         background: theme.colors.card,
-        border: "1px solid rgba(110,212,255,0.24)",
-        boxShadow: "0 13px 30px rgba(0,0,0,0.16)",
+        border:
+          "1px solid rgba(110,212,255,0.24)",
+        boxShadow:
+          "0 13px 30px rgba(0,0,0,0.16)",
       }}
     >
       <div
@@ -619,7 +698,8 @@ function ConfirmedBookingCard({
             placeItems: "center",
             flexShrink: 0,
             borderRadius: 16,
-            background: "rgba(72,184,232,0.14)",
+            background:
+              "rgba(72,184,232,0.14)",
             fontSize: 23,
           }}
         >
@@ -637,7 +717,9 @@ function ConfirmedBookingCard({
           >
             {getTime(booking.dateTime)}
             {booking.endDateTime
-              ? ` → ${getTime(booking.endDateTime)}`
+              ? ` → ${getTime(
+                  booking.endDateTime,
+                )}`
               : ""}
           </p>
 
@@ -715,7 +797,8 @@ function SectionHeading({
           minWidth: 30,
           padding: "6px 9px",
           borderRadius: 999,
-          background: "rgba(17,197,191,0.14)",
+          background:
+            "rgba(17,197,191,0.14)",
           color: theme.colors.primary,
           fontSize: 12,
           fontWeight: 850,
@@ -734,7 +817,8 @@ function Pill({ text }: { text: string }) {
       style={{
         padding: "7px 9px",
         borderRadius: 999,
-        background: "rgba(255,255,255,0.06)",
+        background:
+          "rgba(255,255,255,0.06)",
         color: theme.colors.textSoft,
         fontSize: 11,
         fontWeight: 750,

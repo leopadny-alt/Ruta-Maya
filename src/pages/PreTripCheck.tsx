@@ -7,6 +7,7 @@ import { restaurants } from "../data/restaurants";
 import { roadTrip } from "../data/roadTrip";
 import { getPrivateTravelData } from "../utils/privateTravelData";
 import { getTestDate } from "../utils/travelClock";
+import { getTravelerProfile } from "../utils/travelerProfile";
 import { theme } from "../styles/theme";
 
 type CheckStatus =
@@ -167,7 +168,7 @@ function PreTripCheck() {
       accommodations.length +
       restaurants.length;
 
-    const activeTestDate = getTestDate();
+    const activeTestDate = getTestDate(); const travelerProfile = getTravelerProfile();
 
     const privateData =
       getPrivateTravelData();
@@ -429,6 +430,18 @@ function PreTripCheck() {
               ? "Backup creato oggi."
               : `Ultimo backup creato ${backupAge} giorni fa.`,
       },
+      {
+  id: "traveler-profile",
+  title: "Profilo viaggiatore",
+  description:
+    "Controlla che questo dispositivo sia associato alla persona corretta.",
+  status: travelerProfile
+    ? "success"
+    : "warning",
+  detail: travelerProfile
+    ? `Questo telefono è configurato per ${travelerProfile}.`
+    : "Nessun profilo selezionato su questo dispositivo.",
+},
       {
         id: "test-mode",
         title: "Modalità simulazione",
