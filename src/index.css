@@ -666,4 +666,28 @@ nav[aria-label="Navigazione principale"] button:active::after {
       translateX(-50%)
       scale(1.15);
   }
+  /* Caricamento sezioni dinamiche */
+
+.ruta-page-loader {
+  width: 42px;
+  height: 42px;
+
+  margin: 0 auto;
+
+  border:
+    4px solid rgba(255, 255, 255, 0.12);
+
+  border-top-color: #11c5bf;
+
+  border-radius: 50%;
+
+  animation:
+    ruta-page-loader-spin
+    750ms linear infinite;
+}
+
+@keyframes ruta-page-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

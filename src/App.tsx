@@ -1,15 +1,34 @@
-import { useCallback, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useState,
+} from "react";
+import AppErrorBoundary from "./components/AppErrorBoundary";
 import BottomNavigation, {
   type Tab,
 } from "./components/BottomNavigation";
 import ConnectionStatus from "./components/ConnectionStatus";
+import PageLoader from "./components/PageLoader";
 import PageTransition from "./components/PageTransition";
 import SplashScreen from "./components/SplashScreen";
-import Budget from "./pages/Budget";
 import Home from "./pages/Home";
-import Itinerary from "./pages/Itinerary";
-import MapPage from "./pages/MapPage";
-import More from "./pages/More";
+
+const MapPage = lazy(
+  () => import("./pages/MapPage"),
+);
+
+const Itinerary = lazy(
+  () => import("./pages/Itinerary"),
+);
+
+const Budget = lazy(
+  () => import("./pages/Budget"),
+);
+
+const More = lazy(
+  () => import("./pages/More"),
+);
 
 function App() {
   const [activeTab, setActiveTab] =
@@ -65,18 +84,20 @@ function App() {
   }
 
   return (
-    <>
+    <AppErrorBoundary>
       <ConnectionStatus />
 
-      <PageTransition pageKey={activeTab}>
-        {currentPage}
-      </PageTransition>
+      <Suspense fallback={<PageLoader />}>
+        <PageTransition pageKey={activeTab}>
+          {currentPage}
+        </PageTransition>
+      </Suspense>
 
       <BottomNavigation
         activeTab={activeTab}
         onChange={navigateTo}
       />
-    </>
+    </AppErrorBoundary>
   );
 }
 
