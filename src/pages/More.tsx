@@ -16,6 +16,7 @@ import TripSimulator from "./TripSimulator";
 import PreTripCheck from "./PreTripCheck";
 import PrivateTravelData from "./PrivateTravelData";
 import DocumentVault from "./DocumentVault";
+import DailyAgenda from "./DailyAgenda";
 import { theme } from "../styles/theme";
 
 type MoreSection =
@@ -36,7 +37,8 @@ type MoreSection =
   | "simulator"
   | "pretrip"
   | "private-data"
-  | "documents";
+  | "documents"
+  | "agenda";
 
 const menuItems = [
   {
@@ -62,6 +64,12 @@ const menuItems = [
   icon: "🗂️",
   title: "Cassaforte documenti",
   subtitle: "Voucher e biglietti disponibili offline",
+},
+{
+  id: "agenda",
+  icon: "🕒",
+  title: "Agenda del giorno",
+  subtitle: "Attività, orari e spostamenti",
 },
   {
     id: "roadtrip",
@@ -190,6 +198,7 @@ function More() {
     simulator: <TripSimulator />,
     "private-data": <PrivateTravelData />,
     documents: <DocumentVault />,
+    agenda: <DailyAgenda />,
   };
 
   if (section !== "menu") {
