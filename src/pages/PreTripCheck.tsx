@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { accommodations } from "../data/accommodations";
+import { bookings } from "../data/bookings";
 import { itinerary } from "../data/itinerary";
 import { locations } from "../data/locations";
 import { restaurants } from "../data/restaurants";
 import { roadTrip } from "../data/roadTrip";
+import { getPrivateTravelData } from "../utils/privateTravelData";
 import { getTestDate } from "../utils/travelClock";
 import { theme } from "../styles/theme";
 
-type CheckStatus = "success" | "warning" | "error" | "loading";
+type CheckStatus =
+  | "success"
+  | "warning"
+  | "error"
+  | "loading";
 
 type AppCheck = {
   id: string;
@@ -16,6 +22,8 @@ type AppCheck = {
   status: CheckStatus;
   detail: string;
 };
+
+const BACKUP_DATE_KEY = "ruta-maya-last-backup-date";
 
 function isStandaloneMode() {
   const standaloneMedia = window.matchMedia(
@@ -47,6 +55,21 @@ async function checkImage(path: string) {
   }
 }
 
+function getDaysSince(date: string) {
+  const savedDate = new Date(date);
+
+  if (Number.isNaN(savedDate.getTime())) {
+    return null;
+  }
+
+  const difference =
+    Date.now() - savedDate.getTime();
+
+  return Math.floor(
+    difference / (1000 * 60 * 60 * 24),
+  );
+}
+
 function PreTripCheck() {
   const [serviceWorkerActive, setServiceWorkerActive] =
     useState<boolean | null>(null);
@@ -61,7 +84,8 @@ function PreTripCheck() {
     new Date().toISOString(),
   );
 
-  const [isChecking, setIsChecking] = useState(false);
+  const [isChecking, setIsChecking] =
+    useState(false);
 
   async function runChecks() {
     setIsChecking(true);
@@ -71,7 +95,9 @@ function PreTripCheck() {
         const registration =
           await navigator.serviceWorker.getRegistration();
 
-        setServiceWorkerActive(Boolean(registration));
+        setServiceWorkerActive(
+          Boolean(registration),
+        );
       } catch {
         setServiceWorkerActive(false);
       }
@@ -101,7 +127,8 @@ function PreTripCheck() {
   const checks = useMemo<AppCheck[]>(() => {
     const localStorageAvailable = (() => {
       try {
-        const testKey = "ruta-maya-storage-test";
+        const testKey =
+          "ruta-maya-storage-test";
 
         localStorage.setItem(testKey, "ok");
         localStorage.removeItem(testKey);
@@ -112,18 +139,12 @@ function PreTripCheck() {
       }
     })();
 
-    const backupDataPresent = [
-      "ruta-maya-expenses",
-      "ruta-maya-people",
-      "ruta-maya-packing-checklist",
-      "ruta-maya-trip-notes",
-      "ruta-maya-personal-contacts",
-    ].some((key) => localStorage.getItem(key) !== null);
-
     const invalidAccommodationUrls =
       accommodations.filter(
         (accommodation) =>
-          !accommodation.url.startsWith("https://"),
+          !accommodation.url.startsWith(
+            "https://",
+          ),
       );
 
     const itineraryComplete =
@@ -141,7 +162,46 @@ function PreTripCheck() {
         !Number.isFinite(location.longitude),
     );
 
+    const totalMapPlaces =
+      locations.length +
+      accommodations.length +
+      restaurants.length;
+
     const activeTestDate = getTestDate();
+
+    const privateData =
+      getPrivateTravelData();
+
+    const savedReferenceCount =
+      bookings.filter((booking) =>
+        Boolean(
+          privateData.bookingReferences[
+            booking.id
+          ]?.trim(),
+        ),
+      ).length;
+
+    const missingReferenceCount =
+      bookings.length - savedReferenceCount;
+
+    const lastBackupDate =
+      localStorage.getItem(BACKUP_DATE_KEY);
+
+    const backupAge = lastBackupDate
+      ? getDaysSince(lastBackupDate)
+      : null;
+
+    const hasPersonalData = [
+      "ruta-maya-expenses",
+      "ruta-maya-people",
+      "ruta-maya-packing-checklist",
+      "ruta-maya-trip-notes",
+      "ruta-maya-personal-contacts",
+      "ruta-maya-private-travel-data",
+    ].some(
+      (key) =>
+        localStorage.getItem(key) !== null,
+    );
 
     return [
       {
@@ -190,7 +250,7 @@ function PreTripCheck() {
         id: "storage",
         title: "Salvataggio locale",
         description:
-          "Controlla se note, budget e checklist possono essere salvati.",
+          "Controlla se note, budget e codici possono essere salvati.",
         status: localStorageAvailable
           ? "success"
           : "error",
@@ -231,11 +291,13 @@ function PreTripCheck() {
           "Controlla prenotazioni e collegamenti Airbnb.",
         status:
           accommodations.length === 6 &&
-          invalidAccommodationUrls.length === 0
+          invalidAccommodationUrls.length ===
+            0
             ? "success"
             : "warning",
         detail:
-          invalidAccommodationUrls.length === 0
+          invalidAccommodationUrls.length ===
+          0
             ? `${accommodations.length} alloggi con collegamento valido.`
             : `${invalidAccommodationUrls.length} collegamenti da controllare.`,
       },
@@ -245,7 +307,7 @@ function PreTripCheck() {
         description:
           "Controlla il numero di locali salvati.",
         status:
-          restaurants.length > 0
+          restaurants.length >= 12
             ? "success"
             : "warning",
         detail: `${restaurants.length} ristoranti disponibili.`,
@@ -254,27 +316,52 @@ function PreTripCheck() {
         id: "map",
         title: "Smart Map",
         description:
-          "Controlla coordinate e luoghi della mappa.",
+          "Controlla tappe, alloggi e ristoranti presenti nella mappa.",
         status:
-          locations.length > 0 &&
-          invalidLocations.length === 0
+          invalidLocations.length === 0 &&
+          totalMapPlaces >= 32
             ? "success"
-            : "error",
+            : "warning",
         detail:
           invalidLocations.length === 0
-            ? `${locations.length} luoghi con coordinate valide.`
-            : `${invalidLocations.length} luoghi hanno coordinate non valide.`,
+            ? `${locations.length} tappe + ${accommodations.length} alloggi + ${restaurants.length} ristoranti = ${totalMapPlaces} luoghi.`
+            : `${invalidLocations.length} tappe hanno coordinate non valide.`,
       },
       {
         id: "roadtrip",
         title: "Road Trip",
         description:
-          "Controlla gli spostamenti salvati.",
+          "Controlla tutti gli spostamenti del viaggio.",
         status:
-          roadTrip.length > 0
+          roadTrip.length >= 14
             ? "success"
             : "warning",
         detail: `${roadTrip.length} tratte disponibili.`,
+      },
+      {
+        id: "bookings",
+        title: "Prenotazioni",
+        description:
+          "Controlla voli, traghetti, auto e assicurazione.",
+        status:
+          bookings.length === 9
+            ? "success"
+            : "warning",
+        detail: `${bookings.length} prenotazioni disponibili offline.`,
+      },
+      {
+        id: "private-references",
+        title: "Codici privati",
+        description:
+          "Verifica che tutti i PNR e riferimenti siano salvati sul telefono.",
+        status:
+          missingReferenceCount === 0
+            ? "success"
+            : "warning",
+        detail:
+          missingReferenceCount === 0
+            ? `Tutti i ${savedReferenceCount} codici sono salvati localmente.`
+            : `${savedReferenceCount}/${bookings.length} codici salvati. Ne mancano ${missingReferenceCount}.`,
       },
       {
         id: "icon",
@@ -316,13 +403,31 @@ function PreTripCheck() {
         id: "personal-data",
         title: "Dati personali",
         description:
-          "Controlla se sono già stati inseriti dati da proteggere.",
-        status: backupDataPresent
+          "Controlla se sono presenti informazioni locali da proteggere.",
+        status: hasPersonalData
           ? "success"
           : "warning",
-        detail: backupDataPresent
-          ? "Sono presenti dati personali salvati."
+        detail: hasPersonalData
+          ? "Sono presenti dati personali salvati sul dispositivo."
           : "Non risultano ancora dati personali inseriti.",
+      },
+      {
+        id: "backup",
+        title: "Backup recente",
+        description:
+          "Controlla se è stata creata una copia dei dati locali.",
+        status:
+          backupAge === null
+            ? "warning"
+            : backupAge <= 7
+              ? "success"
+              : "warning",
+        detail:
+          backupAge === null
+            ? "Non risulta ancora registrato alcun backup."
+            : backupAge === 0
+              ? "Backup creato oggi."
+              : `Ultimo backup creato ${backupAge} giorni fa.`,
       },
       {
         id: "test-mode",
@@ -347,15 +452,18 @@ function PreTripCheck() {
   ]);
 
   const completedChecks = checks.filter(
-    (check) => check.status === "success",
+    (check) =>
+      check.status === "success",
   ).length;
 
   const warningChecks = checks.filter(
-    (check) => check.status === "warning",
+    (check) =>
+      check.status === "warning",
   ).length;
 
   const errorChecks = checks.filter(
-    (check) => check.status === "error",
+    (check) =>
+      check.status === "error",
   ).length;
 
   const readiness = Math.round(
@@ -399,7 +507,10 @@ function PreTripCheck() {
         return;
       }
 
-      await navigator.clipboard.writeText(report);
+      await navigator.clipboard.writeText(
+        report,
+      );
+
       alert("Rapporto copiato.");
     } catch (error) {
       if (
@@ -409,7 +520,10 @@ function PreTripCheck() {
         return;
       }
 
-      window.prompt("Copia il rapporto:", report);
+      window.prompt(
+        "Copia il rapporto:",
+        report,
+      );
     }
   }
 
@@ -438,7 +552,12 @@ function PreTripCheck() {
         Collaudo finale
       </p>
 
-      <h1 style={{ margin: "8px 0 6px", fontSize: 34 }}>
+      <h1
+        style={{
+          margin: "8px 0 6px",
+          fontSize: 34,
+        }}
+      >
         Controllo pre-partenza
       </h1>
 
@@ -462,7 +581,8 @@ function PreTripCheck() {
             errorChecks > 0
               ? "linear-gradient(135deg, #AD3C52, #5A1F35)"
               : "linear-gradient(135deg, rgba(17,197,191,0.96), rgba(14,79,111,0.94))",
-          boxShadow: "0 20px 45px rgba(0,0,0,0.26)",
+          boxShadow:
+            "0 20px 45px rgba(0,0,0,0.26)",
         }}
       >
         <p
@@ -492,7 +612,8 @@ function PreTripCheck() {
           style={{
             display: "flex",
             alignItems: "flex-end",
-            justifyContent: "space-between",
+            justifyContent:
+              "space-between",
             gap: 20,
             marginTop: 18,
           }}
@@ -520,8 +641,13 @@ function PreTripCheck() {
             </span>
           </div>
 
-          <div style={{ textAlign: "right" }}>
+          <div
+            style={{
+              textAlign: "right",
+            }}
+          >
             <strong>{completedChecks}</strong>
+
             <span
               style={{
                 display: "block",
@@ -541,7 +667,8 @@ function PreTripCheck() {
             marginTop: 19,
             overflow: "hidden",
             borderRadius: 999,
-            background: "rgba(7,26,46,0.28)",
+            background:
+              "rgba(7,26,46,0.28)",
           }}
         >
           <div
@@ -549,8 +676,10 @@ function PreTripCheck() {
               width: `${readiness}%`,
               height: "100%",
               borderRadius: 999,
-              background: theme.colors.secondary,
-              transition: "width 350ms ease",
+              background:
+                theme.colors.secondary,
+              transition:
+                "width 350ms ease",
             }}
           />
         </div>
@@ -559,7 +688,8 @@ function PreTripCheck() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
+          gridTemplateColumns:
+            "repeat(3, 1fr)",
           gap: 9,
           marginTop: 14,
         }}
@@ -599,7 +729,8 @@ function PreTripCheck() {
               gap: 13,
               padding: 16,
               borderRadius: 20,
-              background: theme.colors.card,
+              background:
+                theme.colors.card,
               border: `1px solid ${getStatusColor(
                 check.status,
               )}35`,
@@ -616,12 +747,16 @@ function PreTripCheck() {
                 background: `${getStatusColor(
                   check.status,
                 )}18`,
-                color: getStatusColor(check.status),
+                color: getStatusColor(
+                  check.status,
+                ),
                 fontSize: 19,
                 fontWeight: 900,
               }}
             >
-              {getStatusSymbol(check.status)}
+              {getStatusSymbol(
+                check.status,
+              )}
             </span>
 
             <div style={{ flex: 1 }}>
@@ -637,7 +772,8 @@ function PreTripCheck() {
               <p
                 style={{
                   margin: "5px 0 0",
-                  color: theme.colors.textSoft,
+                  color:
+                    theme.colors.textSoft,
                   fontSize: 12,
                   lineHeight: 1.45,
                 }}
@@ -648,7 +784,9 @@ function PreTripCheck() {
               <p
                 style={{
                   margin: "8px 0 0",
-                  color: getStatusColor(check.status),
+                  color: getStatusColor(
+                    check.status,
+                  ),
                   fontSize: 13,
                   fontWeight: 750,
                   lineHeight: 1.45,
@@ -671,11 +809,17 @@ function PreTripCheck() {
           padding: 14,
           border: 0,
           borderRadius: 17,
-          background: theme.colors.primary,
-          color: theme.colors.background,
+          background:
+            theme.colors.primary,
+          color:
+            theme.colors.background,
           fontWeight: 850,
-          cursor: isChecking ? "not-allowed" : "pointer",
-          opacity: isChecking ? 0.65 : 1,
+          cursor: isChecking
+            ? "not-allowed"
+            : "pointer",
+          opacity: isChecking
+            ? 0.65
+            : 1,
         }}
       >
         {isChecking
@@ -690,9 +834,11 @@ function PreTripCheck() {
           width: "100%",
           marginTop: 10,
           padding: 14,
-          border: "1px solid rgba(255,255,255,0.13)",
+          border:
+            "1px solid rgba(255,255,255,0.13)",
           borderRadius: 17,
-          background: theme.colors.card,
+          background:
+            theme.colors.card,
           color: theme.colors.text,
           fontWeight: 800,
           cursor: "pointer",
@@ -704,19 +850,24 @@ function PreTripCheck() {
       <p
         style={{
           margin: "15px 4px 0",
-          color: theme.colors.textSoft,
+          color:
+            theme.colors.textSoft,
           fontSize: 12,
           textAlign: "center",
         }}
       >
         Ultimo controllo:{" "}
-        {new Date(lastCheck).toLocaleString("it-IT")}
+        {new Date(
+          lastCheck,
+        ).toLocaleString("it-IT")}
       </p>
     </main>
   );
 }
 
-function getStatusColor(status: CheckStatus) {
+function getStatusColor(
+  status: CheckStatus,
+) {
   if (status === "success") {
     return theme.colors.primary;
   }
@@ -732,7 +883,9 @@ function getStatusColor(status: CheckStatus) {
   return theme.colors.textSoft;
 }
 
-function getStatusSymbol(status: CheckStatus) {
+function getStatusSymbol(
+  status: CheckStatus,
+) {
   if (status === "success") {
     return "✓";
   }
@@ -762,8 +915,10 @@ function SummaryCard({
       style={{
         padding: "14px 7px",
         borderRadius: 17,
-        background: theme.colors.card,
-        border: "1px solid rgba(255,255,255,0.08)",
+        background:
+          theme.colors.card,
+        border:
+          "1px solid rgba(255,255,255,0.08)",
         textAlign: "center",
       }}
     >
@@ -781,7 +936,8 @@ function SummaryCard({
         style={{
           display: "block",
           marginTop: 4,
-          color: theme.colors.textSoft,
+          color:
+            theme.colors.textSoft,
           fontSize: 10,
         }}
       >

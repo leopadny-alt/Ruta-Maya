@@ -3,6 +3,9 @@ import { theme } from "../styles/theme";
 
 const BACKUP_VERSION = 1;
 
+const LAST_BACKUP_DATE_KEY =
+  "ruta-maya-last-backup-date";
+
 const STORAGE_KEYS = [
   "ruta-maya-expenses",
   "ruta-maya-people",
@@ -14,6 +17,7 @@ const STORAGE_KEYS = [
   "ruta-maya-personal-contacts",
   "ruta-maya-map-favorites",
   "ruta-maya-private-travel-data",
+  LAST_BACKUP_DATE_KEY,
 ];
 
 type BackupFile = {
@@ -23,17 +27,19 @@ type BackupFile = {
   data: Record<string, string | null>;
 };
 
+type MessageType = "success" | "error" | "";
+
 function DataBackup() {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef =
+    useRef<HTMLInputElement>(null);
 
   const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState<
-    "success" | "error" | ""
-  >("");
+  const [messageType, setMessageType] =
+    useState<MessageType>("");
 
   function showMessage(
     text: string,
-    type: "success" | "error",
+    type: Exclude<MessageType, "">,
   ) {
     setMessage(text);
     setMessageType(type);
@@ -42,6 +48,13 @@ function DataBackup() {
       setMessage("");
       setMessageType("");
     }, 3500);
+  }
+
+  function registerBackupDate() {
+    localStorage.setItem(
+      LAST_BACKUP_DATE_KEY,
+      new Date().toISOString(),
+    );
   }
 
   function createBackup(): BackupFile {
@@ -63,22 +76,32 @@ function DataBackup() {
     const backup = createBackup();
     const json = JSON.stringify(backup, null, 2);
 
-    const fileName = `ruta-maya-backup-${new Date()
+    const date = new Date()
       .toISOString()
-      .slice(0, 10)}.json`;
+      .slice(0, 10);
+
+    const fileName =
+      `ruta-maya-backup-${date}.json`;
+
+    const file = new File(
+      [json],
+      fileName,
+      {
+        type: "application/json",
+      },
+    );
 
     return {
       backup,
       json,
       fileName,
-      file: new File([json], fileName, {
-        type: "application/json",
-      }),
+      file,
     };
   }
 
   async function shareBackup() {
-    const { file, fileName } = getBackupFile();
+    const { file, fileName } =
+      getBackupFile();
 
     try {
       if (
@@ -92,6 +115,8 @@ function DataBackup() {
           text: "Backup dei dati dell’app Ruta Maya.",
           files: [file],
         });
+
+        registerBackupDate();
 
         showMessage(
           "Backup condiviso correttamente.",
@@ -123,14 +148,18 @@ function DataBackup() {
   }
 
   function downloadBackup() {
-    const { json, fileName } = getBackupFile();
+    const { json, fileName } =
+      getBackupFile();
 
     const blob = new Blob([json], {
       type: "application/json",
     });
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+    const url =
+      URL.createObjectURL(blob);
+
+    const link =
+      document.createElement("a");
 
     link.href = url;
     link.download = fileName;
@@ -140,6 +169,8 @@ function DataBackup() {
     link.remove();
 
     URL.revokeObjectURL(url);
+
+    registerBackupDate();
 
     showMessage(
       "Backup scaricato correttamente.",
@@ -154,7 +185,8 @@ function DataBackup() {
   async function importBackup(
     event: React.ChangeEvent<HTMLInputElement>,
   ) {
-    const selectedFile = event.target.files?.[0];
+    const selectedFile =
+      event.target.files?.[0];
 
     event.target.value = "";
 
@@ -163,34 +195,45 @@ function DataBackup() {
     }
 
     try {
-      const fileContent = await selectedFile.text();
+      const fileContent =
+        await selectedFile.text();
+
       const parsedBackup = JSON.parse(
         fileContent,
       ) as BackupFile;
 
       const isValidBackup =
         parsedBackup.app === "Ruta Maya" &&
-        typeof parsedBackup.version === "number" &&
+        typeof parsedBackup.version ===
+          "number" &&
         parsedBackup.data &&
-        typeof parsedBackup.data === "object";
+        typeof parsedBackup.data ===
+          "object";
 
       if (!isValidBackup) {
-        throw new Error("Backup non valido");
+        throw new Error(
+          "Backup non valido",
+        );
       }
 
-      const confirmed = window.confirm(
-        "L’importazione sostituirà i dati attualmente salvati su questo dispositivo. Vuoi continuare?",
-      );
+      const confirmed =
+        window.confirm(
+          "L’importazione sostituirà i dati attualmente salvati su questo dispositivo. Vuoi continuare?",
+        );
 
       if (!confirmed) {
         return;
       }
 
       STORAGE_KEYS.forEach((key) => {
-        const value = parsedBackup.data[key];
+        const value =
+          parsedBackup.data[key];
 
         if (typeof value === "string") {
-          localStorage.setItem(key, value);
+          localStorage.setItem(
+            key,
+            value,
+          );
         } else {
           localStorage.removeItem(key);
         }
@@ -213,17 +256,19 @@ function DataBackup() {
   }
 
   function deleteLocalData() {
-    const firstConfirmation = window.confirm(
-      "Vuoi eliminare tutti i dati personali salvati nell’app su questo dispositivo?",
-    );
+    const firstConfirmation =
+      window.confirm(
+        "Vuoi eliminare tutti i dati personali salvati nell’app su questo dispositivo?",
+      );
 
     if (!firstConfirmation) {
       return;
     }
 
-    const secondConfirmation = window.confirm(
-      "Questa operazione non può essere annullata. Hai già creato un backup?",
-    );
+    const secondConfirmation =
+      window.confirm(
+        "Questa operazione non può essere annullata. Hai già creato un backup?",
+      );
 
     if (!secondConfirmation) {
       return;
@@ -243,16 +288,24 @@ function DataBackup() {
     }, 1200);
   }
 
-  const savedSections = STORAGE_KEYS.filter(
-    (key) => localStorage.getItem(key) !== null,
-  ).length;
+  const savedSections =
+    STORAGE_KEYS.filter(
+      (key) =>
+        localStorage.getItem(key) !== null,
+    ).length;
+
+  const lastBackupDate =
+    localStorage.getItem(
+      LAST_BACKUP_DATE_KEY,
+    );
 
   return (
     <main
       style={{
         minHeight: "100vh",
         boxSizing: "border-box",
-        padding: "28px 20px 112px",
+        padding:
+          "28px 20px 112px",
         background: `linear-gradient(180deg, ${theme.colors.background}, ${theme.colors.backgroundGradient})`,
         color: theme.colors.text,
         fontFamily:
@@ -272,18 +325,25 @@ function DataBackup() {
         Sicurezza
       </p>
 
-      <h1 style={{ margin: "8px 0 6px", fontSize: 34 }}>
+      <h1
+        style={{
+          margin: "8px 0 6px",
+          fontSize: 34,
+        }}
+      >
         Backup dati
       </h1>
 
       <p
         style={{
           marginTop: 0,
-          color: theme.colors.textSoft,
+          color:
+            theme.colors.textSoft,
           lineHeight: 1.5,
         }}
       >
-        Salva e trasferisci i dati personali di Ruta Maya.
+        Salva e trasferisci i dati personali di
+        Ruta Maya.
       </p>
 
       <section
@@ -293,7 +353,8 @@ function DataBackup() {
           borderRadius: 25,
           background:
             "linear-gradient(135deg, rgba(17,197,191,0.96), rgba(14,79,111,0.94))",
-          boxShadow: "0 18px 40px rgba(0,0,0,0.24)",
+          boxShadow:
+            "0 18px 40px rgba(0,0,0,0.24)",
         }}
       >
         <p
@@ -313,7 +374,8 @@ function DataBackup() {
             fontSize: 42,
           }}
         >
-          {savedSections}/{STORAGE_KEYS.length}
+          {savedSections}/
+          {STORAGE_KEYS.length}
         </strong>
 
         <p
@@ -324,9 +386,49 @@ function DataBackup() {
             lineHeight: 1.45,
           }}
         >
-          Il backup include Budget, partecipanti, prenotazioni,
-          checklist, cambio valuta, note, contatti e preferiti.
+          Il backup include Budget, partecipanti,
+          prenotazioni, checklist, cambio valuta,
+          carburante, note, contatti, preferiti e
+          codici privati.
         </p>
+
+        <div
+          style={{
+            marginTop: 17,
+            padding: 13,
+            borderRadius: 15,
+            background:
+              "rgba(7,26,46,0.25)",
+          }}
+        >
+          <span
+            style={{
+              display: "block",
+              fontSize: 11,
+              opacity: 0.75,
+              textTransform: "uppercase",
+              letterSpacing: 0.7,
+            }}
+          >
+            Ultimo backup
+          </span>
+
+          <strong
+            style={{
+              display: "block",
+              marginTop: 5,
+              fontSize: 15,
+            }}
+          >
+            {lastBackupDate
+              ? new Date(
+                  lastBackupDate,
+                ).toLocaleString(
+                  "it-IT",
+                )
+              : "Non ancora creato"}
+          </strong>
+        </div>
       </section>
 
       {message && (
@@ -336,15 +438,18 @@ function DataBackup() {
             padding: 14,
             borderRadius: 16,
             background:
-              messageType === "success"
+              messageType ===
+              "success"
                 ? "rgba(17,197,191,0.16)"
                 : "rgba(255,104,104,0.16)",
             border:
-              messageType === "success"
+              messageType ===
+              "success"
                 ? "1px solid rgba(17,197,191,0.28)"
                 : "1px solid rgba(255,104,104,0.28)",
             color:
-              messageType === "success"
+              messageType ===
+              "success"
                 ? theme.colors.primary
                 : "#FFB4A8",
             textAlign: "center",
@@ -394,7 +499,9 @@ function DataBackup() {
         type="file"
         accept=".json,application/json"
         onChange={importBackup}
-        style={{ display: "none" }}
+        style={{
+          display: "none",
+        }}
       />
 
       <section
@@ -402,11 +509,18 @@ function DataBackup() {
           marginTop: 26,
           padding: 20,
           borderRadius: 22,
-          background: theme.colors.card,
-          border: "1px solid rgba(255,255,255,0.08)",
+          background:
+            theme.colors.card,
+          border:
+            "1px solid rgba(255,255,255,0.08)",
         }}
       >
-        <h2 style={{ margin: 0, fontSize: 20 }}>
+        <h2
+          style={{
+            margin: 0,
+            fontSize: 20,
+          }}
+        >
           Come trasferire i dati
         </h2>
 
@@ -422,41 +536,49 @@ function DataBackup() {
             "Invia il file agli altri partecipanti.",
             "Apri Ruta Maya sul nuovo telefono.",
             "Vai su Altro → Backup dati → Importa backup.",
-          ].map((step, index) => (
-            <div
-              key={step}
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 12,
-              }}
-            >
-              <span
+          ].map(
+            (step, index) => (
+              <div
+                key={step}
                 style={{
-                  width: 30,
-                  height: 30,
-                  display: "grid",
-                  placeItems: "center",
-                  flexShrink: 0,
-                  borderRadius: 10,
-                  background: "rgba(17,197,191,0.16)",
-                  color: theme.colors.primary,
-                  fontWeight: 850,
+                  display: "flex",
+                  alignItems:
+                    "flex-start",
+                  gap: 12,
                 }}
               >
-                {index + 1}
-              </span>
+                <span
+                  style={{
+                    width: 30,
+                    height: 30,
+                    display: "grid",
+                    placeItems:
+                      "center",
+                    flexShrink: 0,
+                    borderRadius: 10,
+                    background:
+                      "rgba(17,197,191,0.16)",
+                    color:
+                      theme.colors.primary,
+                    fontWeight: 850,
+                  }}
+                >
+                  {index + 1}
+                </span>
 
-              <span
-                style={{
-                  color: theme.colors.textSoft,
-                  lineHeight: 1.5,
-                }}
-              >
-                {step}
-              </span>
-            </div>
-          ))}
+                <span
+                  style={{
+                    color:
+                      theme.colors
+                        .textSoft,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {step}
+                </span>
+              </div>
+            ),
+          )}
         </div>
       </section>
 
@@ -465,8 +587,10 @@ function DataBackup() {
           marginTop: 24,
           padding: 20,
           borderRadius: 22,
-          background: "rgba(255,104,104,0.08)",
-          border: "1px solid rgba(255,104,104,0.18)",
+          background:
+            "rgba(255,104,104,0.08)",
+          border:
+            "1px solid rgba(255,104,104,0.18)",
         }}
       >
         <h2
@@ -482,14 +606,16 @@ function DataBackup() {
         <p
           style={{
             margin: "8px 0 0",
-            color: theme.colors.textSoft,
+            color:
+              theme.colors.textSoft,
             fontSize: 13,
             lineHeight: 1.5,
           }}
         >
-          Cancella tutte le informazioni personali inserite su
-          questo dispositivo. L’itinerario e i contenuti generali
-          dell’app resteranno disponibili.
+          Cancella tutte le informazioni personali
+          inserite su questo dispositivo. L’itinerario
+          e i contenuti generali dell’app resteranno
+          disponibili.
         </p>
 
         <button
@@ -499,9 +625,11 @@ function DataBackup() {
             width: "100%",
             marginTop: 16,
             padding: 13,
-            border: "1px solid rgba(255,104,104,0.35)",
+            border:
+              "1px solid rgba(255,104,104,0.35)",
             borderRadius: 15,
-            background: "transparent",
+            background:
+              "transparent",
             color: "#FFB4A8",
             fontWeight: 800,
             cursor: "pointer",
@@ -514,14 +642,16 @@ function DataBackup() {
       <p
         style={{
           margin: "22px 4px 0",
-          color: theme.colors.textSoft,
+          color:
+            theme.colors.textSoft,
           fontSize: 12,
           lineHeight: 1.5,
         }}
       >
-        Il file di backup contiene le informazioni personali
-        inserite nell’app. Conservalo e condividilo soltanto con
-        persone fidate.
+        Il file di backup contiene le informazioni
+        personali inserite nell’app, inclusi i codici
+        delle prenotazioni. Conservalo e condividilo
+        soltanto con persone fidate.
       </p>
     </main>
   );
@@ -549,14 +679,17 @@ function ActionCard({
       style={{
         padding: 19,
         borderRadius: 22,
-        background: theme.colors.card,
-        border: "1px solid rgba(255,255,255,0.08)",
+        background:
+          theme.colors.card,
+        border:
+          "1px solid rgba(255,255,255,0.08)",
       }}
     >
       <div
         style={{
           display: "flex",
-          alignItems: "flex-start",
+          alignItems:
+            "flex-start",
           gap: 14,
         }}
       >
@@ -568,14 +701,19 @@ function ActionCard({
             placeItems: "center",
             flexShrink: 0,
             borderRadius: 16,
-            background: "rgba(17,197,191,0.15)",
+            background:
+              "rgba(17,197,191,0.15)",
             fontSize: 23,
           }}
         >
           {icon}
         </span>
 
-        <div style={{ flex: 1 }}>
+        <div
+          style={{
+            flex: 1,
+          }}
+        >
           <h2
             style={{
               margin: 0,
@@ -588,7 +726,9 @@ function ActionCard({
           <p
             style={{
               margin: "7px 0 0",
-              color: theme.colors.textSoft,
+              color:
+                theme.colors
+                  .textSoft,
               fontSize: 13,
               lineHeight: 1.5,
             }}
