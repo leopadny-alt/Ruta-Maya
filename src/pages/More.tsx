@@ -18,6 +18,7 @@ import PrivateTravelData from "./PrivateTravelData";
 import DocumentVault from "./DocumentVault";
 import DailyAgenda from "./DailyAgenda";
 import TravelerProfile from "./TravelerProfile";
+import EmergencyLocation from "./EmergencyLocation";
 import { theme } from "../styles/theme";
 
 type MoreSection =
@@ -40,6 +41,7 @@ type MoreSection =
   | "private-data"
   | "documents"
   | "agenda"
+  | "emergency-location"
   | "profile";
 
 const menuItems = [
@@ -133,6 +135,12 @@ const menuItems = [
   title: "Aggiornamenti app",
   subtitle: "Versione, cache e installazione",
 },
+{
+  id: "emergency-location",
+  icon: "🆘",
+  title: "SOS e posizione",
+  subtitle: "Emergenze e condivisione GPS",
+},
   {
     id: "info",
     icon: "🆘",
@@ -208,6 +216,7 @@ function More() {
     documents: <DocumentVault />,
     agenda: <DailyAgenda />,
     profile: <TravelerProfile />,
+    "emergency-location": <EmergencyLocation />,
   };
 
   if (section !== "menu") {

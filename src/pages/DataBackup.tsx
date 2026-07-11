@@ -18,6 +18,7 @@ const STORAGE_KEYS = [
   "ruta-maya-map-favorites",
   "ruta-maya-private-travel-data",
   "ruta-maya-traveler-profile",
+  "ruta-maya-last-known-position",
   LAST_BACKUP_DATE_KEY,
 ];
 
