@@ -15,53 +15,53 @@ export const roadTrip: RoadTripLeg[] = [
     id: 1,
     day: "06 agosto",
     from: "Aeroporto di Cancún",
-    to: "Puerto Juárez",
+    to: "Embarcadero Xcaret",
     distance: "Circa 25 km",
     duration: "Circa 30–45 min",
     transport: "Auto",
     notes:
-      "Ritiro dell’auto in aeroporto e trasferimento al parcheggio vicino al terminal dei traghetti.",
+      "Ritiro dell’auto alle 16:00 e trasferimento all’Embarcadero Isla Mujeres by Xcaret, km 4.5 della Zona Hotelera. Cercare un parcheggio vicino al terminal.",
     mapsQuery:
-      "Cancun International Airport to Puerto Juarez ferry terminal",
+      "Cancun International Airport to Embarcadero Isla Mujeres by Xcaret km 4.5 Zona Hotelera",
   },
   {
     id: 2,
     day: "06 agosto",
-    from: "Puerto Juárez",
+    from: "Zona Hotelera di Cancún",
     to: "Isla Mujeres",
     distance: "Tragitto marittimo",
-    duration: "Circa 20–30 min",
+    duration: "20 min",
     transport: "Traghetto",
     notes:
-      "L’auto resta parcheggiata a Puerto Juárez durante il soggiorno sull’isola.",
+      "Xcaret Ferry alle 19:00. Presentarsi entro le 18:30 e convertire il voucher Bookaway al botteghino.",
     mapsQuery:
-      "Puerto Juarez ferry terminal Isla Mujeres",
+      "Embarcadero Isla Mujeres by Xcaret Zona Hotelera Cancun",
   },
   {
     id: 3,
     day: "08 agosto",
     from: "Isla Mujeres",
-    to: "Puerto Juárez",
+    to: "Zona Hotelera di Cancún",
     distance: "Tragitto marittimo",
-    duration: "Circa 20–30 min",
+    duration: "20 min",
     transport: "Traghetto",
     notes:
-      "Dopo l’arrivo, recuperare l’auto dal parcheggio.",
+      "Xcaret Ferry alle 11:00. Presentarsi entro le 10:30. Dopo l’arrivo, recuperare l’auto dal parcheggio.",
     mapsQuery:
-      "Isla Mujeres ferry terminal to Puerto Juarez",
+      "Xcaret Xailing Ferry Isla Mujeres",
   },
   {
     id: 4,
     day: "08 agosto",
-    from: "Puerto Juárez",
+    from: "Zona Hotelera di Cancún",
     to: "Tulum",
-    distance: "Circa 140 km",
+    distance: "Circa 135 km",
     duration: "Circa 2 h 15",
     transport: "Auto",
     notes:
-      "Sosta breve prevista a Puerto Morelos lungo il percorso.",
+      "Partenza dopo aver recuperato l’auto. Sosta breve prevista a Puerto Morelos.",
     mapsQuery:
-      "Puerto Juarez to Tulum via Puerto Morelos",
+      "Embarcadero Isla Mujeres by Xcaret Cancun to Puerto Morelos to Tulum",
   },
   {
     id: 5,
@@ -147,10 +147,10 @@ export const roadTrip: RoadTripLeg[] = [
     from: "Chiquilá",
     to: "Isla Holbox",
     distance: "Tragitto marittimo",
-    duration: "Circa 25 min",
+    duration: "20 min",
     transport: "Traghetto",
     notes:
-      "Controllare gli orari e acquistare il biglietto prima dell’imbarco.",
+      "Holbox Express alle 15:30. Presentarsi entro le 15:00 e portare il voucher stampato.",
     mapsQuery:
       "Chiquila ferry terminal to Holbox",
   },
@@ -160,10 +160,10 @@ export const roadTrip: RoadTripLeg[] = [
     from: "Isla Holbox",
     to: "Chiquilá",
     distance: "Tragitto marittimo",
-    duration: "Circa 25 min",
+    duration: "20 min",
     transport: "Traghetto",
     notes:
-      "Dopo lo sbarco, recuperare l’auto dal parcheggio.",
+      "Holbox Express alle 18:30. Presentarsi entro le 18:00. Dopo lo sbarco, recuperare l’auto.",
     mapsQuery:
       "Holbox ferry terminal to Chiquila",
   },
@@ -176,7 +176,7 @@ export const roadTrip: RoadTripLeg[] = [
     duration: "Circa 2 h 15",
     transport: "Auto",
     notes:
-      "Trasferimento verso l’alloggio dell’ultima notte a Cancún.",
+      "Trasferimento serale verso l’alloggio dell’ultima notte a Cancún.",
     mapsQuery:
       "Chiquila to Cancun",
   },
@@ -185,12 +185,12 @@ export const roadTrip: RoadTripLeg[] = [
     day: "15 agosto",
     from: "Cancún",
     to: "Aeroporto di Cancún",
-    distance: "Da definire in base all’alloggio",
+    distance: "Da verificare in base all’alloggio",
     duration: "Da verificare",
     transport: "Auto",
     notes:
-      "Prevedere il tempo necessario per rifornimento, riconsegna dell’auto e trasferimento al terminal.",
+      "Arrivare a Localiza per la riconsegna fissata alle 08:00. Fare rifornimento prima e fotografare il veicolo alla restituzione.",
     mapsQuery:
-      "Cancun to Cancun International Airport",
+      "Cancun to Localiza Cancun International Airport",
   },
 ];

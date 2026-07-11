@@ -31,7 +31,7 @@ export const bookingSchedule: ScheduledBooking[] = [
     dateTime: "2026-08-06T19:00:00",
     endDateTime: "2026-08-06T19:20:00",
     title: "Traghetto per Isla Mujeres",
-    subtitle: "Xcaret Ferry · presentarsi alle 18:30",
+    subtitle: "Xcaret Ferry · Zona Hotelera km 4.5 · presentarsi alle 18:30",,
     icon: "⛴️",
     travelers: [
       "Leonardo",
@@ -47,7 +47,7 @@ export const bookingSchedule: ScheduledBooking[] = [
     dateTime: "2026-08-08T11:00:00",
     endDateTime: "2026-08-08T11:20:00",
     title: "Traghetto per Cancún",
-    subtitle: "Xcaret Ferry · presentarsi alle 10:30",
+    subtitle: "Xcaret Ferry · arrivo nella Zona Hotelera · presentarsi alle 10:30",
     icon: "⛴️",
     travelers: [
       "Leonardo",
