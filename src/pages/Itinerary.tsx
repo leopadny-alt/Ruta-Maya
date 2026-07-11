@@ -3,6 +3,7 @@ import { accommodations } from "../data/accommodations";
 import { itinerary } from "../data/itinerary";
 import { roadTrip } from "../data/roadTrip";
 import { theme } from "../styles/theme";
+import { getAppDate } from "../utils/travelClock";
 
 function getAccommodation(location?: string) {
   if (!location) {
@@ -30,29 +31,78 @@ function getGoogleMapsSearchUrl(query: string) {
   )}`;
 }
 
+function getCurrentTripDay() {
+  const today = getAppDate();
+  const start = new Date("2026-08-06T00:00:00");
+  const end = new Date("2026-08-15T23:59:59");
+
+  if (today < start || today > end) {
+    return undefined;
+  }
+
+  const normalizedToday = new Date(today);
+  const normalizedStart = new Date(start);
+
+  normalizedToday.setHours(0, 0, 0, 0);
+  normalizedStart.setHours(0, 0, 0, 0);
+
+  const difference = Math.floor(
+    (normalizedToday.getTime() -
+      normalizedStart.getTime()) /
+      (1000 * 60 * 60 * 24),
+  );
+
+  return difference + 1;
+}
+
 function Itinerary() {
-  const [expandedDays, setExpandedDays] = useState<number[]>([1]);
+  const currentTripDay = getCurrentTripDay();
+
+  const [expandedDays, setExpandedDays] = useState<number[]>(
+    currentTripDay ? [currentTripDay] : [1],
+  );
 
   const expandedCount = expandedDays.length;
 
   function toggleDay(day: number) {
-    setExpandedDays((currentDays) => {
-      if (currentDays.includes(day)) {
-        return currentDays.filter(
-          (expandedDay) => expandedDay !== day,
-        );
-      }
-
-      return [...currentDays, day];
-    });
+    setExpandedDays((currentDays) =>
+      currentDays.includes(day)
+        ? currentDays.filter(
+            (expandedDay) => expandedDay !== day,
+          )
+        : [...currentDays, day],
+    );
   }
 
   function expandAll() {
-    setExpandedDays(itinerary.map((tripDay) => tripDay.day));
+    setExpandedDays(
+      itinerary.map((tripDay) => tripDay.day),
+    );
   }
 
   function closeAll() {
     setExpandedDays([]);
+  }
+
+  function openNextDay(index: number) {
+    const nextDay = itinerary[index + 1];
+
+    if (!nextDay) {
+      return;
+    }
+
+    setExpandedDays((currentDays) => [
+      ...new Set([...currentDays, nextDay.day]),
+    ]);
+
+    window.setTimeout(() => {
+      document
+        .getElementById(`trip-day-${nextDay.day}`)
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+    }, 80);
   }
 
   return (
@@ -60,107 +110,178 @@ function Itinerary() {
       style={{
         minHeight: "100vh",
         boxSizing: "border-box",
-        padding: "28px 20px 112px",
-        background: `linear-gradient(180deg, ${theme.colors.background}, ${theme.colors.backgroundGradient})`,
+        padding:
+          "calc(23px + env(safe-area-inset-top)) 18px 116px",
+        background: `
+          radial-gradient(
+            circle at 94% 4%,
+            rgba(244,213,141,0.12),
+            transparent 27%
+          ),
+          radial-gradient(
+            circle at 5% 42%,
+            rgba(17,197,191,0.09),
+            transparent 26%
+          ),
+          linear-gradient(
+            180deg,
+            ${theme.colors.background},
+            ${theme.colors.backgroundGradient}
+          )
+        `,
         color: theme.colors.text,
         fontFamily:
           "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       }}
     >
-      <p
-        style={{
-          margin: 0,
-          color: theme.colors.primary,
-          fontSize: 13,
-          fontWeight: 850,
-          letterSpacing: 1.2,
-          textTransform: "uppercase",
-        }}
-      >
-        06–15 agosto 2026
-      </p>
+      <header>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 16,
+          }}
+        >
+          <div>
+            <p
+              style={{
+                margin: 0,
+                color: theme.colors.primary,
+                fontSize: 11,
+                fontWeight: 900,
+                letterSpacing: 1.6,
+                textTransform: "uppercase",
+              }}
+            >
+              06–15 agosto 2026
+            </p>
 
-      <h1
-        style={{
-          margin: "8px 0 6px",
-          fontSize: 34,
-        }}
-      >
-        Itinerario
-      </h1>
+            <h1
+              style={{
+                margin: "7px 0 0",
+                fontSize: 34,
+                lineHeight: 1,
+                letterSpacing: -1,
+              }}
+            >
+              Itinerario
+            </h1>
 
-      <p
-        style={{
-          marginTop: 0,
-          color: theme.colors.textSoft,
-          lineHeight: 1.5,
-        }}
-      >
-        Dieci giornate tra mare, siti Maya, cenote e città.
-      </p>
+            <p
+              style={{
+                margin: "9px 0 0",
+                maxWidth: 280,
+                color: theme.colors.textSoft,
+                fontSize: 13,
+                lineHeight: 1.5,
+              }}
+            >
+              Dieci giornate attraverso lo Yucatán.
+            </p>
+          </div>
+
+          <div
+            style={{
+              width: 55,
+              height: 55,
+              display: "grid",
+              placeItems: "center",
+              flexShrink: 0,
+              borderRadius: 18,
+              background:
+                "linear-gradient(135deg, rgba(244,213,141,0.22), rgba(17,197,191,0.17))",
+              border:
+                "1px solid rgba(255,255,255,0.11)",
+              boxShadow:
+                "0 14px 32px rgba(0,0,0,0.22)",
+              fontSize: 25,
+            }}
+          >
+            🗓️
+          </div>
+        </div>
+
+        <section
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 8,
+            marginTop: 23,
+          }}
+        >
+          <SummaryCard value="10" label="giorni" />
+          <SummaryCard value="14" label="tratte" />
+          <SummaryCard value="6" label="alloggi" />
+        </section>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 9,
+            marginTop: 15,
+          }}
+        >
+          <button
+            type="button"
+            onClick={expandAll}
+            disabled={expandedCount === itinerary.length}
+            style={{
+              ...controlButtonStyle,
+              color:
+                expandedCount === itinerary.length
+                  ? theme.colors.textSoft
+                  : theme.colors.primary,
+              background:
+                expandedCount === itinerary.length
+                  ? "rgba(255,255,255,0.045)"
+                  : "rgba(17,197,191,0.11)",
+              opacity:
+                expandedCount === itinerary.length ? 0.6 : 1,
+            }}
+          >
+            ↕ Espandi tutto
+          </button>
+
+          <button
+            type="button"
+            onClick={closeAll}
+            disabled={expandedCount === 0}
+            style={{
+              ...controlButtonStyle,
+              opacity: expandedCount === 0 ? 0.55 : 1,
+            }}
+          >
+            ↑ Chiudi tutto
+          </button>
+        </div>
+      </header>
 
       <section
         style={{
+          position: "relative",
           display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 10,
-          marginTop: 23,
+          gap: 12,
+          marginTop: 27,
         }}
       >
-        <SummaryCard value="10" label="giorni" />
-        <SummaryCard value="6" label="alloggi" />
-        <SummaryCard value="5" label="amici" />
-      </section>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 10,
-          marginTop: 17,
-        }}
-      >
-        <button
-          type="button"
-          onClick={expandAll}
-          disabled={expandedCount === itinerary.length}
+        <div
+          aria-hidden="true"
           style={{
-            ...controlButtonStyle,
+            position: "absolute",
+            top: 30,
+            bottom: 30,
+            left: 27,
+            width: 2,
             background:
-              expandedCount === itinerary.length
-                ? "rgba(255,255,255,0.05)"
-                : "rgba(17,197,191,0.15)",
-            color:
-              expandedCount === itinerary.length
-                ? theme.colors.textSoft
-                : theme.colors.primary,
+              "linear-gradient(180deg, rgba(17,197,191,0.55), rgba(17,197,191,0.08))",
           }}
-        >
-          Espandi tutto
-        </button>
+        />
 
-        <button
-          type="button"
-          onClick={closeAll}
-          disabled={expandedCount === 0}
-          style={{
-            ...controlButtonStyle,
-            opacity: expandedCount === 0 ? 0.55 : 1,
-          }}
-        >
-          Chiudi tutto
-        </button>
-      </div>
-
-      <section
-        style={{
-          display: "grid",
-          gap: 14,
-          marginTop: 21,
-        }}
-      >
         {itinerary.map((tripDay, index) => {
           const isExpanded = expandedDays.includes(tripDay.day);
+          const isCurrent = currentTripDay === tripDay.day;
           const accommodation = getAccommodation(
             tripDay.overnight,
           );
@@ -168,17 +289,24 @@ function Itinerary() {
 
           return (
             <article
+              id={`trip-day-${tripDay.day}`}
               key={tripDay.day}
               style={{
+                position: "relative",
                 overflow: "hidden",
-                borderRadius: 23,
-                background: theme.colors.card,
-                border: isExpanded
-                  ? "1px solid rgba(17,197,191,0.28)"
-                  : "1px solid rgba(255,255,255,0.08)",
-                boxShadow: isExpanded
-                  ? "0 14px 35px rgba(0,0,0,0.18)"
-                  : "none",
+                borderRadius: 24,
+                background: isCurrent
+                  ? "linear-gradient(145deg, rgba(17,197,191,0.13), rgba(255,255,255,0.065))"
+                  : "rgba(255,255,255,0.06)",
+                border: isCurrent
+                  ? "1px solid rgba(17,197,191,0.34)"
+                  : isExpanded
+                    ? "1px solid rgba(255,255,255,0.13)"
+                    : "1px solid rgba(255,255,255,0.075)",
+                boxShadow: isCurrent
+                  ? "0 18px 42px rgba(0,0,0,0.22)"
+                  : "0 9px 25px rgba(0,0,0,0.09)",
+                scrollMarginTop: 20,
               }}
             >
               <button
@@ -187,10 +315,11 @@ function Itinerary() {
                 aria-expanded={isExpanded}
                 style={{
                   width: "100%",
-                  display: "flex",
+                  display: "grid",
+                  gridTemplateColumns: "55px 1fr auto",
                   alignItems: "center",
-                  gap: 14,
-                  padding: 18,
+                  gap: 13,
+                  padding: 16,
                   border: 0,
                   background: "transparent",
                   color: theme.colors.text,
@@ -200,68 +329,106 @@ function Itinerary() {
               >
                 <span
                   style={{
-                    width: 51,
-                    height: 51,
+                    position: "relative",
+                    zIndex: 2,
+                    width: 55,
+                    height: 55,
                     display: "grid",
                     placeItems: "center",
-                    flexShrink: 0,
-                    borderRadius: 17,
-                    background: isExpanded
-                      ? theme.colors.primary
-                      : "rgba(17,197,191,0.15)",
-                    color: isExpanded
-                      ? theme.colors.background
-                      : theme.colors.primary,
+                    borderRadius: 18,
+                    background:
+                      isExpanded || isCurrent
+                        ? theme.colors.primary
+                        : theme.colors.background,
+                    border:
+                      isExpanded || isCurrent
+                        ? "1px solid rgba(255,255,255,0.14)"
+                        : "2px solid rgba(17,197,191,0.42)",
+                    color:
+                      isExpanded || isCurrent
+                        ? theme.colors.background
+                        : theme.colors.primary,
+                    boxShadow:
+                      isExpanded || isCurrent
+                        ? "0 10px 25px rgba(17,197,191,0.20)"
+                        : "none",
                     fontSize: 19,
-                    fontWeight: 900,
+                    fontWeight: 950,
                   }}
                 >
                   {tripDay.day}
                 </span>
 
-                <span style={{ flex: 1 }}>
+                <span style={{ minWidth: 0 }}>
                   <span
                     style={{
-                      display: "block",
-                      color: theme.colors.secondary,
-                      fontSize: 12,
-                      fontWeight: 850,
-                      textTransform: "uppercase",
-                      letterSpacing: 0.7,
+                      display: "flex",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      gap: 7,
                     }}
                   >
-                    {tripDay.date}
+                    <span
+                      style={{
+                        color: theme.colors.secondary,
+                        fontSize: 10,
+                        fontWeight: 900,
+                        letterSpacing: 0.8,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {tripDay.date}
+                    </span>
+
+                    {isCurrent && (
+                      <span
+                        style={{
+                          padding: "4px 6px",
+                          borderRadius: 999,
+                          background:
+                            "rgba(17,197,191,0.15)",
+                          color: theme.colors.primary,
+                          fontSize: 8,
+                          fontWeight: 950,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        Oggi
+                      </span>
+                    )}
                   </span>
 
                   <strong
                     style={{
                       display: "block",
                       marginTop: 5,
-                      fontSize: 18,
+                      fontSize: 17,
                       lineHeight: 1.3,
                     }}
                   >
                     {tripDay.title}
                   </strong>
 
-                  {tripDay.overnight && (
-                    <span
-                      style={{
-                        display: "block",
-                        marginTop: 5,
-                        color: theme.colors.textSoft,
-                        fontSize: 12,
-                      }}
-                    >
-                      🛏️ Notte a {tripDay.overnight}
-                    </span>
-                  )}
+                  <span
+                    style={{
+                      display: "block",
+                      marginTop: 5,
+                      color: theme.colors.textSoft,
+                      fontSize: 11,
+                    }}
+                  >
+                    {tripDay.overnight
+                      ? `🛏️ ${tripDay.overnight}`
+                      : "✈️ Rientro"}
+                    {" · "}
+                    {tripDay.activities.length} attività
+                  </span>
                 </span>
 
                 <span
                   style={{
                     color: theme.colors.primary,
-                    fontSize: 25,
+                    fontSize: 24,
                     transform: isExpanded
                       ? "rotate(90deg)"
                       : "rotate(0deg)",
@@ -275,7 +442,7 @@ function Itinerary() {
               {isExpanded && (
                 <div
                   style={{
-                    padding: "0 18px 19px",
+                    padding: "0 16px 18px 84px",
                   }}
                 >
                   <div
@@ -286,15 +453,15 @@ function Itinerary() {
                     }}
                   >
                     <SectionTitle
-                      icon="📋"
-                      title="Programma della giornata"
+                      eyebrow="Programma"
+                      title="La giornata"
                     />
 
                     <div
                       style={{
                         display: "grid",
-                        gap: 10,
-                        marginTop: 13,
+                        gap: 0,
+                        marginTop: 15,
                       }}
                     >
                       {tripDay.activities.map(
@@ -302,28 +469,47 @@ function Itinerary() {
                           <div
                             key={activity}
                             style={{
-                              display: "flex",
-                              alignItems: "flex-start",
-                              gap: 11,
-                              padding: 12,
-                              borderRadius: 15,
-                              background:
-                                "rgba(255,255,255,0.055)",
+                              position: "relative",
+                              display: "grid",
+                              gridTemplateColumns: "29px 1fr",
+                              gap: 10,
+                              paddingBottom:
+                                activityIndex ===
+                                tripDay.activities.length - 1
+                                  ? 0
+                                  : 15,
                             }}
                           >
+                            {activityIndex <
+                              tripDay.activities.length - 1 && (
+                              <span
+                                aria-hidden="true"
+                                style={{
+                                  position: "absolute",
+                                  top: 25,
+                                  bottom: 0,
+                                  left: 14,
+                                  width: 1,
+                                  background:
+                                    "rgba(17,197,191,0.22)",
+                                }}
+                              />
+                            )}
+
                             <span
                               style={{
-                                width: 25,
-                                height: 25,
+                                position: "relative",
+                                zIndex: 1,
+                                width: 29,
+                                height: 29,
                                 display: "grid",
                                 placeItems: "center",
-                                flexShrink: 0,
-                                borderRadius: 8,
+                                borderRadius: 10,
                                 background:
-                                  "rgba(17,197,191,0.15)",
+                                  "rgba(17,197,191,0.14)",
                                 color: theme.colors.primary,
-                                fontSize: 11,
-                                fontWeight: 900,
+                                fontSize: 10,
+                                fontWeight: 950,
                               }}
                             >
                               {activityIndex + 1}
@@ -331,9 +517,10 @@ function Itinerary() {
 
                             <span
                               style={{
+                                paddingTop: 5,
                                 color: theme.colors.textSoft,
-                                lineHeight: 1.45,
-                                fontSize: 14,
+                                fontSize: 13,
+                                lineHeight: 1.48,
                               }}
                             >
                               {activity}
@@ -345,9 +532,9 @@ function Itinerary() {
                   </div>
 
                   {dailyRoadTrip.length > 0 && (
-                    <div style={{ marginTop: 21 }}>
+                    <div style={{ marginTop: 24 }}>
                       <SectionTitle
-                        icon="🚗"
+                        eyebrow="On the road"
                         title="Spostamenti"
                       />
 
@@ -355,7 +542,7 @@ function Itinerary() {
                         style={{
                           display: "grid",
                           gap: 10,
-                          marginTop: 13,
+                          marginTop: 14,
                         }}
                       >
                         {dailyRoadTrip.map((leg) => (
@@ -363,40 +550,64 @@ function Itinerary() {
                             key={leg.id}
                             style={{
                               padding: 14,
-                              borderRadius: 16,
+                              borderRadius: 18,
                               background:
-                                "rgba(72,184,232,0.09)",
+                                "rgba(72,184,232,0.075)",
                               border:
-                                "1px solid rgba(72,184,232,0.15)",
+                                "1px solid rgba(72,184,232,0.16)",
                             }}
                           >
-                            <strong
+                            <div
                               style={{
-                                display: "block",
-                                fontSize: 15,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 9,
                               }}
                             >
-                              {leg.from} → {leg.to}
-                            </strong>
+                              <span
+                                style={{
+                                  width: 35,
+                                  height: 35,
+                                  display: "grid",
+                                  placeItems: "center",
+                                  flexShrink: 0,
+                                  borderRadius: 12,
+                                  background:
+                                    "rgba(72,184,232,0.14)",
+                                  fontSize: 17,
+                                }}
+                              >
+                                {leg.transport === "Traghetto"
+                                  ? "⛴️"
+                                  : leg.transport ===
+                                      "Auto + traghetto"
+                                    ? "🧭"
+                                    : "🚗"}
+                              </span>
+
+                              <strong
+                                style={{
+                                  fontSize: 14,
+                                  lineHeight: 1.35,
+                                }}
+                              >
+                                {leg.from} → {leg.to}
+                              </strong>
+                            </div>
 
                             <div
                               style={{
                                 display: "flex",
                                 flexWrap: "wrap",
-                                gap: 7,
-                                marginTop: 9,
+                                gap: 6,
+                                marginTop: 11,
                               }}
                             >
                               <DetailPill
                                 text={`⏱️ ${leg.duration}`}
                               />
-
                               <DetailPill
                                 text={`📏 ${leg.distance}`}
-                              />
-
-                              <DetailPill
-                                text={leg.transport}
                               />
                             </div>
 
@@ -404,8 +615,8 @@ function Itinerary() {
                               style={{
                                 margin: "11px 0 0",
                                 color: theme.colors.textSoft,
-                                fontSize: 13,
-                                lineHeight: 1.45,
+                                fontSize: 12,
+                                lineHeight: 1.5,
                               }}
                             >
                               {leg.notes}
@@ -420,18 +631,18 @@ function Itinerary() {
                               style={{
                                 display: "block",
                                 marginTop: 12,
-                                padding: "11px 12px",
+                                padding: "10px 12px",
                                 borderRadius: 13,
                                 background:
-                                  "rgba(72,184,232,0.18)",
+                                  "rgba(72,184,232,0.15)",
                                 color: "#6ED4FF",
                                 textAlign: "center",
                                 textDecoration: "none",
-                                fontSize: 13,
-                                fontWeight: 850,
+                                fontSize: 12,
+                                fontWeight: 900,
                               }}
                             >
-                              Apri percorso
+                              Apri percorso →
                             </a>
                           </div>
                         ))}
@@ -440,28 +651,41 @@ function Itinerary() {
                   )}
 
                   {accommodation && (
-                    <div style={{ marginTop: 21 }}>
+                    <div style={{ marginTop: 24 }}>
                       <SectionTitle
-                        icon="🏨"
+                        eyebrow="Questa notte"
                         title="Alloggio"
                       />
 
                       <div
                         style={{
-                          marginTop: 13,
+                          marginTop: 14,
                           padding: 15,
-                          borderRadius: 17,
+                          borderRadius: 18,
                           background:
-                            "rgba(255,184,107,0.09)",
+                            "rgba(255,184,107,0.075)",
                           border:
                             "1px solid rgba(255,184,107,0.17)",
                         }}
                       >
-                        <strong
+                        <span
                           style={{
                             display: "block",
                             color: "#FFB86B",
-                            fontSize: 16,
+                            fontSize: 10,
+                            fontWeight: 900,
+                            letterSpacing: 0.7,
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          🏨 Pernottamento
+                        </span>
+
+                        <strong
+                          style={{
+                            display: "block",
+                            marginTop: 7,
+                            fontSize: 17,
                           }}
                         >
                           {accommodation.location}
@@ -471,7 +695,8 @@ function Itinerary() {
                           style={{
                             margin: "7px 0 0",
                             color: theme.colors.textSoft,
-                            fontSize: 13,
+                            fontSize: 12,
+                            lineHeight: 1.45,
                           }}
                         >
                           {accommodation.dates} ·{" "}
@@ -506,87 +731,68 @@ function Itinerary() {
                             rel="noreferrer"
                             style={{
                               ...smallLinkStyle,
-                              background:
-                                theme.colors.primary,
+                              background: theme.colors.primary,
                             }}
                           >
-                            Google Maps
+                            Maps
                           </a>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  <a
-                    href={getGoogleMapsSearchUrl(tripDay.title)}
-                    target="_blank"
-                    rel="noreferrer"
+                  <div
                     style={{
-                      display: "block",
+                      display: "grid",
+                      gap: 8,
                       marginTop: 20,
-                      padding: "13px 15px",
-                      borderRadius: 15,
-                      background:
-                        "rgba(17,197,191,0.14)",
-                      border:
-                        "1px solid rgba(17,197,191,0.24)",
-                      color: theme.colors.primary,
-                      textAlign: "center",
-                      textDecoration: "none",
-                      fontWeight: 850,
                     }}
                   >
-                    Apri la destinazione in Google Maps
-                  </a>
-
-                  {index < itinerary.length - 1 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setExpandedDays((currentDays) => [
-                          ...new Set([
-                            ...currentDays,
-                            itinerary[index + 1].day,
-                          ]),
-                        ]);
-
-                        window.setTimeout(() => {
-                          document
-                            .getElementById(
-                              `trip-day-${itinerary[index + 1].day}`,
-                            )
-                            ?.scrollIntoView({
-                              behavior: "smooth",
-                              block: "start",
-                            });
-                        }, 50);
-                      }}
+                    <a
+                      href={getGoogleMapsSearchUrl(
+                        tripDay.title,
+                      )}
+                      target="_blank"
+                      rel="noreferrer"
                       style={{
-                        width: "100%",
-                        marginTop: 10,
                         padding: "12px 14px",
+                        borderRadius: 14,
+                        background:
+                          "rgba(17,197,191,0.13)",
                         border:
-                          "1px solid rgba(255,255,255,0.11)",
-                        borderRadius: 15,
-                        background: "transparent",
-                        color: theme.colors.textSoft,
-                        fontWeight: 750,
-                        cursor: "pointer",
+                          "1px solid rgba(17,197,191,0.22)",
+                        color: theme.colors.primary,
+                        textAlign: "center",
+                        textDecoration: "none",
+                        fontSize: 12,
+                        fontWeight: 900,
                       }}
                     >
-                      Giorno successivo ↓
-                    </button>
-                  )}
+                      📍 Apri destinazione in Maps
+                    </a>
+
+                    {index < itinerary.length - 1 && (
+                      <button
+                        type="button"
+                        onClick={() => openNextDay(index)}
+                        style={{
+                          padding: "12px 14px",
+                          border:
+                            "1px solid rgba(255,255,255,0.09)",
+                          borderRadius: 14,
+                          background: "transparent",
+                          color: theme.colors.textSoft,
+                          fontSize: 12,
+                          fontWeight: 800,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Giorno successivo ↓
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
-
-              <div
-                id={`trip-day-${tripDay.day}`}
-                style={{
-                  position: "relative",
-                  top: -20,
-                }}
-              />
             </article>
           );
         })}
@@ -603,11 +809,11 @@ function SummaryCard({
   label: string;
 }) {
   return (
-    <article
+    <div
       style={{
-        padding: "15px 8px",
-        borderRadius: 18,
-        background: theme.colors.card,
+        padding: "13px 7px",
+        borderRadius: 17,
+        background: "rgba(255,255,255,0.06)",
         border: "1px solid rgba(255,255,255,0.08)",
         textAlign: "center",
       }}
@@ -615,7 +821,8 @@ function SummaryCard({
       <strong
         style={{
           display: "block",
-          fontSize: 23,
+          color: theme.colors.primary,
+          fontSize: 21,
         }}
       >
         {value}
@@ -626,35 +833,48 @@ function SummaryCard({
           display: "block",
           marginTop: 4,
           color: theme.colors.textSoft,
-          fontSize: 11,
+          fontSize: 9,
+          textTransform: "uppercase",
         }}
       >
         {label}
       </span>
-    </article>
+    </div>
   );
 }
 
 function SectionTitle({
-  icon,
+  eyebrow,
   title,
 }: {
-  icon: string;
+  eyebrow: string;
   title: string;
 }) {
   return (
-    <h3
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 9,
-        margin: 0,
-        fontSize: 17,
-      }}
-    >
-      <span>{icon}</span>
-      <span>{title}</span>
-    </h3>
+    <div>
+      <p
+        style={{
+          margin: 0,
+          color: theme.colors.primary,
+          fontSize: 9,
+          fontWeight: 900,
+          letterSpacing: 1,
+          textTransform: "uppercase",
+        }}
+      >
+        {eyebrow}
+      </p>
+
+      <h3
+        style={{
+          margin: "5px 0 0",
+          fontSize: 17,
+          lineHeight: 1.25,
+        }}
+      >
+        {title}
+      </h3>
+    </div>
   );
 }
 
@@ -662,11 +882,11 @@ function DetailPill({ text }: { text: string }) {
   return (
     <span
       style={{
-        padding: "7px 9px",
+        padding: "6px 8px",
         borderRadius: 999,
-        background: "rgba(255,255,255,0.07)",
+        background: "rgba(255,255,255,0.065)",
         color: theme.colors.textSoft,
-        fontSize: 11,
+        fontSize: 10,
         fontWeight: 750,
       }}
     >
@@ -676,23 +896,24 @@ function DetailPill({ text }: { text: string }) {
 }
 
 const controlButtonStyle = {
-  padding: "12px 13px",
-  border: "1px solid rgba(255,255,255,0.11)",
-  borderRadius: 15,
-  background: theme.colors.card,
+  padding: "11px 12px",
+  border: "1px solid rgba(255,255,255,0.10)",
+  borderRadius: 14,
+  background: "rgba(255,255,255,0.055)",
   color: theme.colors.text,
-  fontWeight: 800,
+  fontSize: 12,
+  fontWeight: 850,
   cursor: "pointer",
 };
 
 const smallLinkStyle = {
-  padding: "11px 10px",
+  padding: "10px",
   borderRadius: 13,
   color: theme.colors.background,
   textAlign: "center" as const,
   textDecoration: "none",
-  fontSize: 13,
-  fontWeight: 850,
+  fontSize: 12,
+  fontWeight: 900,
 };
 
 export default Itinerary;
