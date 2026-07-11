@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/Ruta-Maya/dev-sw.js?dev-sw', { scope: '/Ruta-Maya/', type: 'classic' })

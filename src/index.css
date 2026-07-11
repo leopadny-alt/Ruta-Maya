@@ -1,0 +1,669 @@
+:root {
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Display",
+    "SF Pro Text",
+    "Segoe UI",
+    sans-serif;
+
+  color: #ffffff;
+  background: #071a2e;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+
+  --background: #071a2e;
+  --background-deep: #04111f;
+  --surface: rgba(255, 255, 255, 0.085);
+  --surface-strong: rgba(255, 255, 255, 0.12);
+  --border: rgba(255, 255, 255, 0.1);
+
+  --primary: #11c5bf;
+  --secondary: #f4d58d;
+  --danger: #ff8e8e;
+
+  --shadow-small:
+    0 8px 22px rgba(0, 0, 0, 0.18);
+
+  --shadow-medium:
+    0 18px 44px rgba(0, 0, 0, 0.24);
+
+  --shadow-large:
+    0 28px 70px rgba(0, 0, 0, 0.32);
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  min-height: 100%;
+  background: var(--background);
+  scroll-behavior: smooth;
+  overscroll-behavior-y: none;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
+
+  background:
+    radial-gradient(
+      circle at 85% -10%,
+      rgba(17, 197, 191, 0.16),
+      transparent 34%
+    ),
+    linear-gradient(
+      180deg,
+      var(--background),
+      var(--background-deep)
+    );
+
+  color: #ffffff;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+
+  background:
+    radial-gradient(
+      circle at 10% 35%,
+      rgba(14, 79, 111, 0.13),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 90% 80%,
+      rgba(17, 197, 191, 0.08),
+      transparent 26%
+    );
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a {
+  touch-action: manipulation;
+}
+
+button {
+  transition:
+    transform 150ms ease,
+    opacity 150ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+button:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+a {
+  transition:
+    transform 150ms ease,
+    opacity 150ms ease,
+    filter 180ms ease;
+}
+
+a:active {
+  opacity: 0.78;
+}
+
+input,
+select,
+textarea {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(17, 197, 191, 0.65) !important;
+
+  box-shadow:
+    0 0 0 4px rgba(17, 197, 191, 0.12);
+
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(255, 255, 255, 0.38);
+}
+
+select option {
+  background: #071a2e;
+  color: #ffffff;
+}
+
+::selection {
+  background: rgba(17, 197, 191, 0.32);
+  color: #ffffff;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/* Transizione tra le sezioni principali */
+
+.page-transition {
+  min-height: 100vh;
+
+  animation:
+    page-enter 320ms
+    cubic-bezier(0.22, 1, 0.36, 1)
+    both;
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.992);
+    filter: blur(2px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* Migliore resa delle card già presenti */
+
+main article,
+main section {
+  transform: translateZ(0);
+}
+
+main article {
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+/* Marker della Smart Map */
+
+.ruta-marker-wrapper {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.ruta-marker {
+  width: 38px;
+  height: 38px;
+
+  display: grid;
+  place-items: center;
+
+  border: 2px solid var(--primary);
+  border-radius: 13px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(13, 44, 70, 0.98),
+      rgba(4, 17, 31, 0.98)
+    );
+
+  color: var(--secondary);
+
+  font-family:
+    Arial,
+    sans-serif;
+
+  font-size: 14px;
+  font-weight: 900;
+
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Leaflet popup coerenti con Ruta Maya */
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: rgba(7, 26, 46, 0.96);
+  color: #ffffff;
+}
+
+.leaflet-popup-content-wrapper {
+  border:
+    1px solid rgba(255, 255, 255, 0.12);
+
+  border-radius: 18px;
+
+  box-shadow:
+    0 18px 45px rgba(0, 0, 0, 0.35);
+
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.leaflet-popup-content {
+  margin: 16px;
+  line-height: 1.5;
+}
+
+.leaflet-popup-content strong {
+  font-size: 15px;
+}
+
+.leaflet-popup-content p {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.leaflet-popup-content a {
+  color: var(--primary);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  top: 7px;
+  right: 7px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 22px;
+}
+
+.leaflet-control-zoom a {
+  background: rgba(7, 26, 46, 0.92) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(7, 26, 46, 0.72) !important;
+  color: rgba(255, 255, 255, 0.62) !important;
+}
+
+.leaflet-control-attribution a {
+  color: var(--primary) !important;
+}
+
+/* Modalità riduzione movimento */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* Ottimizzazione tablet e desktop */
+
+@media (min-width: 700px) {
+  body {
+    display: flex;
+    justify-content: center;
+  }
+
+  #root {
+    width: 100%;
+    max-width: 720px;
+
+    border-left:
+      1px solid rgba(255, 255, 255, 0.06);
+
+    border-right:
+      1px solid rgba(255, 255, 255, 0.06);
+
+    box-shadow:
+      0 0 80px rgba(0, 0, 0, 0.28);
+  }
+  /* Navigazione principale */
+
+nav[aria-label="Navigazione principale"] button {
+  isolation: isolate;
+}
+
+nav[aria-label="Navigazione principale"] button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      circle at 50% 10%,
+      rgba(255, 255, 255, 0.08),
+      transparent 55%
+    );
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+nav[aria-label="Navigazione principale"] button:active::after {
+  opacity: 1;
+}
+
+@media (max-width: 370px) {
+  nav[aria-label="Navigazione principale"] {
+    left: 7px !important;
+    right: 7px !important;
+    padding: 6px !important;
+  }
+
+  nav[aria-label="Navigazione principale"] button {
+    min-height: 54px !important;
+  }
+
+  nav[aria-label="Navigazione principale"] button span:last-child {
+    font-size: 9px !important;
+  }
+  /* Splash screen Ruta Maya */
+
+.ruta-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+
+  min-height: 100dvh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  padding:
+    calc(30px + env(safe-area-inset-top))
+    24px
+    calc(24px + env(safe-area-inset-bottom));
+
+  background:
+    radial-gradient(
+      circle at 50% 32%,
+      rgba(17, 197, 191, 0.2),
+      transparent 31%
+    ),
+    radial-gradient(
+      circle at 50% 80%,
+      rgba(244, 213, 141, 0.08),
+      transparent 28%
+    ),
+    linear-gradient(
+      180deg,
+      #061c30 0%,
+      #04111f 100%
+    );
+
+  color: #ffffff;
+
+  opacity: 1;
+
+  transition:
+    opacity 500ms ease,
+    transform 500ms
+      cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ruta-splash--leaving {
+  opacity: 0;
+  transform: scale(1.035);
+  pointer-events: none;
+}
+
+.ruta-splash__glow {
+  position: absolute;
+  top: 19%;
+  left: 50%;
+
+  width: 270px;
+  height: 270px;
+
+  border-radius: 50%;
+
+  background:
+    rgba(17, 197, 191, 0.16);
+
+  filter: blur(70px);
+
+  transform:
+    translateX(-50%);
+
+  animation:
+    splash-glow 2200ms ease-in-out
+    infinite alternate;
+}
+
+.ruta-splash__content {
+  position: relative;
+  z-index: 1;
+
+  width: 100%;
+  max-width: 360px;
+
+  text-align: center;
+
+  animation:
+    splash-content-enter 850ms
+    cubic-bezier(0.22, 1, 0.36, 1)
+    both;
+}
+
+.ruta-splash__icon-wrapper {
+  width: 150px;
+  height: 150px;
+
+  margin: 0 auto;
+
+  overflow: hidden;
+
+  border:
+    1px solid rgba(255, 255, 255, 0.13);
+
+  border-radius: 38px;
+
+  box-shadow:
+    0 28px 65px rgba(0, 0, 0, 0.42),
+    0 0 42px rgba(17, 197, 191, 0.13),
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.11);
+
+  animation:
+    splash-icon-enter 950ms
+    cubic-bezier(0.22, 1, 0.36, 1)
+    both;
+}
+
+.ruta-splash__icon {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+
+  object-fit: cover;
+}
+
+.ruta-splash__eyebrow {
+  margin: 28px 0 0;
+
+  color: #45ddd6;
+
+  font-size: 12px;
+  font-weight: 850;
+
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+}
+
+.ruta-splash__title {
+  margin: 9px 0 0;
+
+  font-size: clamp(40px, 12vw, 52px);
+  font-weight: 780;
+
+  letter-spacing: -1.7px;
+  line-height: 1;
+}
+
+.ruta-splash__subtitle {
+  margin: 12px 0 0;
+
+  color:
+    rgba(255, 255, 255, 0.66);
+
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.ruta-splash__loader {
+  width: 122px;
+  height: 4px;
+
+  margin: 32px auto 0;
+
+  overflow: hidden;
+
+  border-radius: 999px;
+
+  background:
+    rgba(255, 255, 255, 0.12);
+}
+
+.ruta-splash__loader-fill {
+  width: 100%;
+  height: 100%;
+
+  border-radius: inherit;
+
+  background:
+    linear-gradient(
+      90deg,
+      #11c5bf,
+      #74ece6,
+      #f4d58d
+    );
+
+  transform-origin: left;
+
+  animation:
+    splash-loader 1800ms
+    cubic-bezier(0.22, 1, 0.36, 1)
+    both;
+}
+
+.ruta-splash__footer {
+  position: absolute;
+  right: 20px;
+  bottom:
+    calc(20px + env(safe-area-inset-bottom));
+  left: 20px;
+
+  margin: 0;
+
+  color:
+    rgba(255, 255, 255, 0.35);
+
+  font-size: 11px;
+  font-weight: 750;
+
+  letter-spacing: 1.4px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+@keyframes splash-content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes splash-icon-enter {
+  from {
+    opacity: 0;
+    transform:
+      translateY(16px)
+      scale(0.82)
+      rotate(-2deg);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translateY(0)
+      scale(1)
+      rotate(0);
+  }
+}
+
+@keyframes splash-loader {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes splash-glow {
+  from {
+    opacity: 0.55;
+    transform:
+      translateX(-50%)
+      scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translateX(-50%)
+      scale(1.15);
+  }
+}
