@@ -20,6 +20,7 @@ const STORAGE_KEYS = [
   "ruta-maya-traveler-profile",
   "ruta-maya-last-known-position",
   "ruta-maya-travel-checklist",
+  "ruta-maya-beta-feedback",
   LAST_BACKUP_DATE_KEY,
 ];
 

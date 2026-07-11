@@ -21,6 +21,7 @@ import TravelerProfile from "./TravelerProfile";
 import EmergencyLocation from "./EmergencyLocation";
 import TravelChecklist from "./TravelChecklist";
 import WhatNow from "./WhatNow";
+import BetaFeedback from "./BetaFeedback";
 import { theme } from "../styles/theme";
 
 type MoreSection =
@@ -46,6 +47,7 @@ type MoreSection =
   | "emergency-location"
   | "travel-checklist"
   | "what-now"
+  | "beta-feedback"
   | "profile";
 
 const menuItems = [
@@ -146,6 +148,12 @@ const menuItems = [
     subtitle: "Salva e trasferisci i dati dell’app",
   },
   {
+  id: "beta-feedback",
+  icon: "🧪",
+  title: "Diario beta",
+  subtitle: "Problemi, idee e feedback dal viaggio",
+},
+  {
   id: "settings",
   icon: "⚙️",
   title: "Aggiornamenti app",
@@ -235,6 +243,7 @@ function More() {
     "emergency-location": <EmergencyLocation />,
     "what-now": <WhatNow />,
     "travel-checklist": <TravelChecklist />,
+    "beta-feedback": <BetaFeedback />,
   };
 
   if (section !== "menu") {
