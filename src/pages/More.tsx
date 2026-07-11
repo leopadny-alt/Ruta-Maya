@@ -20,6 +20,7 @@ import DailyAgenda from "./DailyAgenda";
 import TravelerProfile from "./TravelerProfile";
 import EmergencyLocation from "./EmergencyLocation";
 import TravelChecklist from "./TravelChecklist";
+import WhatNow from "./WhatNow";
 import { theme } from "../styles/theme";
 
 type MoreSection =
@@ -44,6 +45,7 @@ type MoreSection =
   | "agenda"
   | "emergency-location"
   | "travel-checklist"
+  | "what-now"
   | "profile";
 
 const menuItems = [
@@ -52,6 +54,12 @@ const menuItems = [
   icon: "👤",
   title: "Il mio profilo",
   subtitle: "Personalizza questo dispositivo",
+},
+{
+  id: "what-now",
+  icon: "🧭",
+  title: "Cosa faccio adesso?",
+  subtitle: "La prossima azione del viaggio",
 },
 {
   id: "travel-checklist",
@@ -225,6 +233,7 @@ function More() {
     agenda: <DailyAgenda />,
     profile: <TravelerProfile />,
     "emergency-location": <EmergencyLocation />,
+    "what-now": <WhatNow />,
     "travel-checklist": <TravelChecklist />,
   };
 
