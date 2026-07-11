@@ -200,17 +200,7 @@ function Budget() {
     [balances],
   );
 
-  const biggestExpense = useMemo(() => {
-    if (expenses.length === 0) {
-      return undefined;
-    }
-
-    return [...expenses].sort(
-      (firstExpense, secondExpense) =>
-        secondExpense.amount -
-        firstExpense.amount,
-    )[0];
-  }, [expenses]);
+  const latestExpense = expenses[0];
 
   function toggleParticipant(
     person: string,
@@ -405,7 +395,7 @@ function Budget() {
         minHeight: "100vh",
         boxSizing: "border-box",
         padding:
-          "calc(23px + env(safe-area-inset-top)) 18px 116px",
+          "calc(23px + env(safe-area-inset-top)) 18px calc(165px + env(safe-area-inset-bottom))",
         background: `
           radial-gradient(
             circle at 92% 4%,
@@ -655,18 +645,18 @@ function Budget() {
             background:
               showPeopleForm
                 ? "rgba(17,197,191,0.12)"
-                : "rgba(255,255,255,0.06)",
+                : "rgba(110,212,255,0.10)",
             color:
               showPeopleForm
                 ? theme.colors.primary
-                : theme.colors.text,
+                : "#D8F4FF",
             border:
               showPeopleForm
                 ? "1px solid rgba(17,197,191,0.24)"
-                : "1px solid rgba(255,255,255,0.09)",
+                : "1px solid rgba(110,212,255,0.18)",
           }}
         >
-          👥 Partecipanti
+          👥 {people.length} partecipanti
         </button>
       </div>
 
@@ -821,7 +811,7 @@ function Budget() {
                     "translateY(-50%)",
                   color:
                     theme.colors.secondary,
-                  fontSize: 17,
+                  fontSize: 20,
                   fontWeight: 900,
                 }}
               >
@@ -839,7 +829,11 @@ function Budget() {
                 placeholder="120,00"
                 style={{
                   ...inputStyle,
-                  paddingLeft: 38,
+                  paddingLeft: 42,
+                  paddingTop: 16,
+                  paddingBottom: 16,
+                  fontSize: 24,
+                  fontWeight: 900,
                 }}
               />
             </div>
@@ -899,14 +893,14 @@ function Budget() {
                 }}
               >
                 <SmallTextButton
-                  label="Tutti"
+                  label="✓ Tutti"
                   onClick={
                     selectAllParticipants
                   }
                 />
 
                 <SmallTextButton
-                  label="Nessuno"
+                  label="○ Nessuno"
                   onClick={
                     clearParticipants
                   }
@@ -1178,7 +1172,7 @@ function Budget() {
             marginTop: 14,
           }}
         >
-          {people.map((person, index) => {
+          {people.map((person) => {
             const balance =
               balances[person] ?? 0;
 
@@ -1201,7 +1195,7 @@ function Budget() {
                 style={{
                   display: "grid",
                   gridTemplateColumns:
-                    "43px 1fr auto",
+                    "1fr auto",
                   alignItems: "center",
                   gap: 12,
                   padding: 14,
@@ -1212,22 +1206,6 @@ function Budget() {
                     "1px solid rgba(255,255,255,0.075)",
                 }}
               >
-                <span
-                  style={{
-                    width: 43,
-                    height: 43,
-                    display: "grid",
-                    placeItems: "center",
-                    borderRadius: 14,
-                    background:
-                      `${balanceColor}14`,
-                    color: balanceColor,
-                    fontSize: 14,
-                    fontWeight: 950,
-                  }}
-                >
-                  {index + 1}
-                </span>
 
                 <div>
                   <strong
@@ -1270,7 +1248,7 @@ function Budget() {
         </div>
       </section>
 
-      {biggestExpense && (
+      {latestExpense && (
         <section
           style={{
             marginTop: 25,
@@ -1292,15 +1270,14 @@ function Budget() {
               textTransform: "uppercase",
             }}
           >
-            Spesa più alta
+            Ultima spesa
           </p>
 
           <div
             style={{
               display: "flex",
               alignItems: "flex-end",
-              justifyContent:
-                "space-between",
+              justifyContent: "space-between",
               gap: 14,
               marginTop: 9,
             }}
@@ -1312,22 +1289,33 @@ function Budget() {
                   fontSize: 17,
                 }}
               >
-                {
-                  biggestExpense.description
-                }
+                {latestExpense.description}
               </strong>
 
               <span
                 style={{
                   display: "block",
                   marginTop: 5,
-                  color:
-                    theme.colors.textSoft,
+                  color: theme.colors.textSoft,
                   fontSize: 11,
+                  lineHeight: 1.45,
                 }}
               >
-                Pagata da{" "}
-                {biggestExpense.paidBy}
+                Pagata da {latestExpense.paidBy} ·{" "}
+                {latestExpense.participants.length} partecipanti
+              </span>
+
+              <span
+                style={{
+                  display: "block",
+                  marginTop: 4,
+                  color: theme.colors.textSoft,
+                  fontSize: 10,
+                }}
+              >
+                {new Date(
+                  latestExpense.createdAt,
+                ).toLocaleDateString("it-IT")}
               </span>
             </div>
 
@@ -1337,9 +1325,7 @@ function Budget() {
                 fontSize: 18,
               }}
             >
-              {formatCurrency(
-                biggestExpense.amount,
-              )}
+              {formatCurrency(latestExpense.amount)}
             </strong>
           </div>
         </section>
@@ -1494,6 +1480,11 @@ function Budget() {
                               .length
                           }{" "}
                           partecipanti ·{" "}
+                          {formatCurrency(
+                            expense.amount /
+                              expense.participants.length,
+                          )}{" "}
+                          a testa ·{" "}
                           {new Date(
                             expense.createdAt,
                           ).toLocaleDateString(
@@ -1661,7 +1652,7 @@ function HeroInfo({
           display: "block",
           color:
             "rgba(255,255,255,0.60)",
-          fontSize: 9,
+          fontSize: 10,
           fontWeight: 750,
           textTransform: "uppercase",
         }}
@@ -1758,7 +1749,7 @@ function SmallTextButton({
       type="button"
       onClick={onClick}
       style={{
-        padding: "6px 8px",
+        padding: "8px 10px",
         border:
           "1px solid rgba(255,255,255,0.09)",
         borderRadius: 10,
