@@ -58,30 +58,27 @@ function getCurrentTripDay() {
 function Itinerary() {
   const currentTripDay = getCurrentTripDay();
 
-  const [expandedDays, setExpandedDays] = useState<number[]>(
-    currentTripDay ? [currentTripDay] : [1],
+  const [expandedDay, setExpandedDay] = useState<number | null>(
+    currentTripDay ?? 1,
   );
 
-  const expandedCount = expandedDays.length;
+  const [expandedRoadLegs, setExpandedRoadLegs] =
+    useState<number[]>([]);
 
   function toggleDay(day: number) {
-    setExpandedDays((currentDays) =>
-      currentDays.includes(day)
-        ? currentDays.filter(
-            (expandedDay) => expandedDay !== day,
+    setExpandedDay((currentDay) =>
+      currentDay === day ? null : day,
+    );
+  }
+
+  function toggleRoadLeg(id: number) {
+    setExpandedRoadLegs((currentIds) =>
+      currentIds.includes(id)
+        ? currentIds.filter(
+            (currentId) => currentId !== id,
           )
-        : [...currentDays, day],
+        : [...currentIds, id],
     );
-  }
-
-  function expandAll() {
-    setExpandedDays(
-      itinerary.map((tripDay) => tripDay.day),
-    );
-  }
-
-  function closeAll() {
-    setExpandedDays([]);
   }
 
   function openNextDay(index: number) {
@@ -91,9 +88,7 @@ function Itinerary() {
       return;
     }
 
-    setExpandedDays((currentDays) => [
-      ...new Set([...currentDays, nextDay.day]),
-    ]);
+    setExpandedDay(nextDay.day);
 
     window.setTimeout(() => {
       document
@@ -111,7 +106,7 @@ function Itinerary() {
         minHeight: "100vh",
         boxSizing: "border-box",
         padding:
-          "calc(23px + env(safe-area-inset-top)) 18px 116px",
+          "calc(23px + env(safe-area-inset-top)) 18px calc(165px + env(safe-area-inset-bottom))",
         background: `
           radial-gradient(
             circle at 94% 4%,
@@ -215,47 +210,6 @@ function Itinerary() {
           <SummaryCard value="6" label="alloggi" />
         </section>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 9,
-            marginTop: 15,
-          }}
-        >
-          <button
-            type="button"
-            onClick={expandAll}
-            disabled={expandedCount === itinerary.length}
-            style={{
-              ...controlButtonStyle,
-              color:
-                expandedCount === itinerary.length
-                  ? theme.colors.textSoft
-                  : theme.colors.primary,
-              background:
-                expandedCount === itinerary.length
-                  ? "rgba(255,255,255,0.045)"
-                  : "rgba(17,197,191,0.11)",
-              opacity:
-                expandedCount === itinerary.length ? 0.6 : 1,
-            }}
-          >
-            ↕ Espandi tutto
-          </button>
-
-          <button
-            type="button"
-            onClick={closeAll}
-            disabled={expandedCount === 0}
-            style={{
-              ...controlButtonStyle,
-              opacity: expandedCount === 0 ? 0.55 : 1,
-            }}
-          >
-            ↑ Chiudi tutto
-          </button>
-        </div>
       </header>
 
       <section
@@ -280,7 +234,7 @@ function Itinerary() {
         />
 
         {itinerary.map((tripDay, index) => {
-          const isExpanded = expandedDays.includes(tripDay.day);
+          const isExpanded = expandedDay === tripDay.day;
           const isCurrent = currentTripDay === tripDay.day;
           const accommodation = getAccommodation(
             tripDay.overnight,
@@ -545,107 +499,140 @@ function Itinerary() {
                           marginTop: 14,
                         }}
                       >
-                        {dailyRoadTrip.map((leg) => (
-                          <div
-                            key={leg.id}
-                            style={{
-                              padding: 14,
-                              borderRadius: 18,
-                              background:
-                                "rgba(72,184,232,0.075)",
-                              border:
-                                "1px solid rgba(72,184,232,0.16)",
-                            }}
-                          >
+                        {dailyRoadTrip.map((leg) => {
+                          const isRoadLegExpanded =
+                            expandedRoadLegs.includes(leg.id);
+
+                          return (
                             <div
+                              key={leg.id}
                               style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 9,
+                                padding: 14,
+                                borderRadius: 18,
+                                background:
+                                  "rgba(72,184,232,0.075)",
+                                border:
+                                  "1px solid rgba(72,184,232,0.16)",
                               }}
                             >
-                              <span
+                              <div
                                 style={{
-                                  width: 35,
-                                  height: 35,
-                                  display: "grid",
-                                  placeItems: "center",
-                                  flexShrink: 0,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 9,
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    width: 35,
+                                    height: 35,
+                                    display: "grid",
+                                    placeItems: "center",
+                                    flexShrink: 0,
+                                    borderRadius: 12,
+                                    background:
+                                      "rgba(72,184,232,0.14)",
+                                    fontSize: 17,
+                                  }}
+                                >
+                                  {leg.transport === "Traghetto"
+                                    ? "⛴️"
+                                    : leg.transport ===
+                                        "Auto + traghetto"
+                                      ? "🧭"
+                                      : "🚗"}
+                                </span>
+
+                                <strong
+                                  style={{
+                                    fontSize: 14,
+                                    lineHeight: 1.35,
+                                  }}
+                                >
+                                  {leg.from} → {leg.to}
+                                </strong>
+                              </div>
+
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexWrap: "wrap",
+                                  gap: 6,
+                                  marginTop: 11,
+                                }}
+                              >
+                                <DetailPill
+                                  text={`⏱️ ${leg.duration}`}
+                                />
+                                <DetailPill
+                                  text={`📏 ${leg.distance}`}
+                                />
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  toggleRoadLeg(leg.id)
+                                }
+                                aria-expanded={isRoadLegExpanded}
+                                style={{
+                                  width: "100%",
+                                  marginTop: 10,
+                                  padding: "8px 10px",
+                                  border:
+                                    "1px solid rgba(255,255,255,0.08)",
                                   borderRadius: 12,
                                   background:
-                                    "rgba(72,184,232,0.14)",
-                                  fontSize: 17,
+                                    "rgba(255,255,255,0.045)",
+                                  color: theme.colors.textSoft,
+                                  fontSize: 10,
+                                  fontWeight: 850,
+                                  cursor: "pointer",
                                 }}
                               >
-                                {leg.transport === "Traghetto"
-                                  ? "⛴️"
-                                  : leg.transport ===
-                                      "Auto + traghetto"
-                                    ? "🧭"
-                                    : "🚗"}
-                              </span>
+                                {isRoadLegExpanded
+                                  ? "Nascondi info ↑"
+                                  : "Info percorso ↓"}
+                              </button>
 
-                              <strong
-                                style={{
-                                  fontSize: 14,
-                                  lineHeight: 1.35,
-                                }}
-                              >
-                                {leg.from} → {leg.to}
-                              </strong>
-                            </div>
-
-                            <div
-                              style={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: 6,
-                                marginTop: 11,
-                              }}
-                            >
-                              <DetailPill
-                                text={`⏱️ ${leg.duration}`}
-                              />
-                              <DetailPill
-                                text={`📏 ${leg.distance}`}
-                              />
-                            </div>
-
-                            <p
-                              style={{
-                                margin: "11px 0 0",
-                                color: theme.colors.textSoft,
-                                fontSize: 12,
-                                lineHeight: 1.5,
-                              }}
-                            >
-                              {leg.notes}
-                            </p>
-
-                            <a
-                              href={getGoogleMapsSearchUrl(
-                                leg.mapsQuery,
+                              {isRoadLegExpanded && (
+                                <p
+                                  style={{
+                                    margin: "11px 0 0",
+                                    color: theme.colors.textSoft,
+                                    fontSize: 12,
+                                    lineHeight: 1.5,
+                                  }}
+                                >
+                                  {leg.notes}
+                                </p>
                               )}
-                              target="_blank"
-                              rel="noreferrer"
-                              style={{
-                                display: "block",
-                                marginTop: 12,
-                                padding: "10px 12px",
-                                borderRadius: 13,
-                                background:
-                                  "rgba(72,184,232,0.15)",
-                                color: "#6ED4FF",
-                                textAlign: "center",
-                                textDecoration: "none",
-                                fontSize: 12,
-                                fontWeight: 900,
-                              }}
-                            >
-                              Apri percorso →
-                            </a>
-                          </div>
-                        ))}
+
+                              <a
+                                href={getGoogleMapsSearchUrl(
+                                  leg.mapsQuery,
+                                )}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{
+                                  display: "block",
+                                  marginTop: 12,
+                                  padding: "10px 12px",
+                                  borderRadius: 13,
+                                  background:
+                                    "rgba(72,184,232,0.15)",
+                                  color: "#6ED4FF",
+                                  textAlign: "center",
+                                  textDecoration: "none",
+                                  fontSize: 12,
+                                  fontWeight: 900,
+                                }}
+                              >
+                                Apri percorso →
+                              </a>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -748,28 +735,23 @@ function Itinerary() {
                       marginTop: 20,
                     }}
                   >
-                    <a
-                      href={getGoogleMapsSearchUrl(
-                        tripDay.title,
-                      )}
-                      target="_blank"
-                      rel="noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => setExpandedDay(null)}
                       style={{
                         padding: "12px 14px",
-                        borderRadius: 14,
-                        background:
-                          "rgba(17,197,191,0.13)",
                         border:
-                          "1px solid rgba(17,197,191,0.22)",
-                        color: theme.colors.primary,
-                        textAlign: "center",
-                        textDecoration: "none",
+                          "1px solid rgba(255,255,255,0.09)",
+                        borderRadius: 14,
+                        background: "transparent",
+                        color: theme.colors.textSoft,
                         fontSize: 12,
-                        fontWeight: 900,
+                        fontWeight: 800,
+                        cursor: "pointer",
                       }}
                     >
-                      📍 Apri destinazione in Maps
-                    </a>
+                      Chiudi giornata ↑
+                    </button>
 
                     {index < itinerary.length - 1 && (
                       <button
@@ -895,16 +877,6 @@ function DetailPill({ text }: { text: string }) {
   );
 }
 
-const controlButtonStyle = {
-  padding: "11px 12px",
-  border: "1px solid rgba(255,255,255,0.10)",
-  borderRadius: 14,
-  background: "rgba(255,255,255,0.055)",
-  color: theme.colors.text,
-  fontSize: 12,
-  fontWeight: 850,
-  cursor: "pointer",
-};
 
 const smallLinkStyle = {
   padding: "10px",
