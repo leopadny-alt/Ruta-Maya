@@ -5,6 +5,7 @@ import { restaurants } from "../data/restaurants";
 import { theme } from "../styles/theme";
 import { getAppDate } from "../utils/travelClock";
 import UpcomingBooking from "../components/UpcomingBooking";
+import CurrentActionWidget from "../components/CurrentActionWidget";
 
 type HomeProps = {
   onNavigate: (tab: Tab) => void;
@@ -331,6 +332,7 @@ function Home({ onNavigate }: HomeProps) {
           )}
         </div>
       </section>
+      <CurrentActionWidget />
       <UpcomingBooking />
 
       <section
