@@ -6,10 +6,19 @@ import {
 import { theme } from "../styles/theme";
 import { getTravelerProfile } from "../utils/travelerProfile";
 
+type Currency = "EUR" | "MXN";
+
 type Expense = {
   id: string;
   description: string;
+  /**
+   * Importo normalizzato in euro, usato per tutti i calcoli.
+   * Le vecchie spese già salvate restano compatibili.
+   */
   amount: number;
+  originalAmount?: number;
+  currency?: Currency;
+  exchangeRate?: number;
   paidBy: string;
   participants: string[];
   createdAt: string;
@@ -27,6 +36,14 @@ const EXPENSES_STORAGE_KEY =
 const PEOPLE_STORAGE_KEY =
   "ruta-maya-people";
 
+const EXCHANGE_RATE_STORAGE_KEY =
+  "ruta-maya-eur-mxn-rate";
+
+const DISPLAY_CURRENCY_STORAGE_KEY =
+  "ruta-maya-budget-display-currency";
+
+const DEFAULT_EUR_MXN_RATE = 20;
+
 const defaultPeople = [
   "Leonardo",
   "Amico 2",
@@ -35,11 +52,31 @@ const defaultPeople = [
   "Amico 5",
 ];
 
-function formatCurrency(value: number) {
+function formatCurrency(
+  valueInEuro: number,
+  currency: Currency,
+  eurMxnRate: number,
+) {
+  const value =
+    currency === "MXN"
+      ? valueInEuro * eurMxnRate
+      : valueInEuro;
+
   return new Intl.NumberFormat("it-IT", {
     style: "currency",
-    currency: "EUR",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(value);
+}
+
+function parseDecimal(value: string) {
+  return Number(
+    value
+      .trim()
+      .replace(/\s/g, "")
+      .replace(",", "."),
+  );
 }
 
 function Budget() {
@@ -56,6 +93,45 @@ function Budget() {
 
   const [amount, setAmount] =
     useState("");
+
+  const [expenseCurrency, setExpenseCurrency] =
+    useState<Currency>("EUR");
+
+  const [displayCurrency, setDisplayCurrency] =
+    useState<Currency>(() => {
+      const savedCurrency = localStorage.getItem(
+        DISPLAY_CURRENCY_STORAGE_KEY,
+      );
+
+      return savedCurrency === "MXN"
+        ? "MXN"
+        : "EUR";
+    });
+
+  const [eurMxnRate, setEurMxnRate] =
+    useState<number>(() => {
+      const savedRate = Number(
+        localStorage.getItem(
+          EXCHANGE_RATE_STORAGE_KEY,
+        ),
+      );
+
+      return Number.isFinite(savedRate) &&
+        savedRate > 0
+        ? savedRate
+        : DEFAULT_EUR_MXN_RATE;
+    });
+
+  const [rateInput, setRateInput] =
+    useState(() =>
+      String(
+        Number(
+          localStorage.getItem(
+            EXCHANGE_RATE_STORAGE_KEY,
+          ),
+        ) || DEFAULT_EUR_MXN_RATE,
+      ),
+    );
 
   const [paidBy, setPaidBy] =
     useState(defaultPeople[0]);
@@ -134,6 +210,20 @@ function Budget() {
     );
   }, [people]);
 
+  useEffect(() => {
+    localStorage.setItem(
+      EXCHANGE_RATE_STORAGE_KEY,
+      String(eurMxnRate),
+    );
+  }, [eurMxnRate]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      DISPLAY_CURRENCY_STORAGE_KEY,
+      displayCurrency,
+    );
+  }, [displayCurrency]);
+
   const totalExpenses = useMemo(
     () =>
       expenses.reduce(
@@ -152,6 +242,23 @@ function Budget() {
   const averagePerPerson =
     people.length > 0
       ? totalExpenses / people.length
+      : 0;
+
+  const displayMoney = (valueInEuro: number) =>
+    formatCurrency(
+      valueInEuro,
+      displayCurrency,
+      eurMxnRate,
+    );
+
+  const previewAmount = parseDecimal(amount);
+
+  const previewAmountInEuro =
+    Number.isFinite(previewAmount) &&
+    previewAmount > 0
+      ? expenseCurrency === "MXN"
+        ? previewAmount / eurMxnRate
+        : previewAmount
       : 0;
 
   const balances = useMemo(() => {
@@ -234,10 +341,27 @@ function Budget() {
     setParticipants([]);
   }
 
+  function saveExchangeRate() {
+    const numericRate = parseDecimal(rateInput);
+
+    if (
+      !Number.isFinite(numericRate) ||
+      numericRate <= 0
+    ) {
+      alert(
+        "Inserisci un cambio valido, ad esempio 20,00.",
+      );
+      setRateInput(String(eurMxnRate));
+      return;
+    }
+
+    setEurMxnRate(numericRate);
+    setRateInput(String(numericRate));
+  }
+
   function addExpense() {
-    const numericAmount = Number(
-      amount.replace(",", "."),
-    );
+    const numericAmount =
+      parseDecimal(amount);
 
     if (
       !description.trim() ||
@@ -252,11 +376,19 @@ function Budget() {
       return;
     }
 
+    const amountInEuro =
+      expenseCurrency === "MXN"
+        ? numericAmount / eurMxnRate
+        : numericAmount;
+
     const newExpense: Expense = {
       id: crypto.randomUUID(),
       description:
         description.trim(),
-      amount: numericAmount,
+      amount: amountInEuro,
+      originalAmount: numericAmount,
+      currency: expenseCurrency,
+      exchangeRate: eurMxnRate,
       paidBy,
       participants,
       createdAt:
@@ -547,7 +679,7 @@ function Budget() {
             letterSpacing: -1.5,
           }}
         >
-          {formatCurrency(totalExpenses)}
+          {displayMoney(totalExpenses)}
         </strong>
 
         <p
@@ -577,18 +709,56 @@ function Budget() {
         >
           <HeroInfo
             label="Media a persona"
-            value={formatCurrency(
-              averagePerPerson,
-            )}
+            value={displayMoney(averagePerPerson)}
           />
 
           <HeroInfo
             label="Media per spesa"
-            value={formatCurrency(
-              averageExpense,
-            )}
+            value={displayMoney(averageExpense)}
           />
         </div>
+      </section>
+
+      <section
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          marginTop: 12,
+          padding: 11,
+          borderRadius: 17,
+          background: "rgba(255,255,255,0.055)",
+          border: "1px solid rgba(255,255,255,0.08)",
+        }}
+      >
+        <div>
+          <strong
+            style={{
+              display: "block",
+              fontSize: 12,
+            }}
+          >
+            Valuta visualizzata
+          </strong>
+
+          <span
+            style={{
+              display: "block",
+              marginTop: 3,
+              color: theme.colors.textSoft,
+              fontSize: 9,
+            }}
+          >
+            1 € = {eurMxnRate.toLocaleString("it-IT")} MXN
+          </span>
+        </div>
+
+        <CurrencyToggle
+          value={displayCurrency}
+          onChange={setDisplayCurrency}
+          compact
+        />
       </section>
 
       <div
@@ -792,41 +962,67 @@ function Budget() {
             />
           </label>
 
-          <label style={labelStyle}>
-            Importo
-
+          <div style={{ marginTop: 16 }}>
             <div
               style={{
-                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
               }}
             >
               <span
                 style={{
-                  position:
-                    "absolute",
+                  color: theme.colors.textSoft,
+                  fontSize: 12,
+                  fontWeight: 800,
+                }}
+              >
+                Importo
+              </span>
+
+              <CurrencyToggle
+                value={expenseCurrency}
+                onChange={setExpenseCurrency}
+                compact
+              />
+            </div>
+
+            <div
+              style={{
+                position: "relative",
+                marginTop: 8,
+              }}
+            >
+              <span
+                style={{
+                  position: "absolute",
                   top: "50%",
                   left: 14,
                   zIndex: 1,
-                  transform:
-                    "translateY(-50%)",
-                  color:
-                    theme.colors.secondary,
+                  transform: "translateY(-50%)",
+                  color: theme.colors.secondary,
                   fontSize: 20,
                   fontWeight: 900,
                 }}
               >
-                €
+                {expenseCurrency === "EUR"
+                  ? "€"
+                  : "$"}
               </span>
 
               <input
                 value={amount}
                 onChange={(event) =>
-                  setAmount(
-                    event.target.value,
-                  )
+                  setAmount(event.target.value)
                 }
                 inputMode="decimal"
-                placeholder="120,00"
+                placeholder={
+                  expenseCurrency === "EUR"
+                    ? "120,00"
+                    : "2.400,00"
+                }
+                aria-label={`Importo in ${expenseCurrency}`}
                 style={{
                   ...inputStyle,
                   paddingLeft: 42,
@@ -837,7 +1033,85 @@ function Budget() {
                 }}
               />
             </div>
-          </label>
+
+            {previewAmountInEuro > 0 && (
+              <p
+                style={{
+                  margin: "8px 0 0",
+                  color: theme.colors.textSoft,
+                  fontSize: 10,
+                  lineHeight: 1.45,
+                }}
+              >
+                Equivale a{" "}
+                <strong
+                  style={{
+                    color: theme.colors.primary,
+                  }}
+                >
+                  {formatCurrency(
+                    previewAmountInEuro,
+                    expenseCurrency === "EUR"
+                      ? "MXN"
+                      : "EUR",
+                    eurMxnRate,
+                  )}
+                </strong>
+              </p>
+            )}
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr auto",
+                alignItems: "end",
+                gap: 8,
+                marginTop: 12,
+                padding: 12,
+                borderRadius: 14,
+                background: "rgba(7,26,46,0.40)",
+                border:
+                  "1px solid rgba(255,255,255,0.08)",
+              }}
+            >
+              <label
+                style={{
+                  color: theme.colors.textSoft,
+                  fontSize: 10,
+                  fontWeight: 800,
+                }}
+              >
+                Cambio usato: 1 € =
+
+                <input
+                  value={rateInput}
+                  onChange={(event) =>
+                    setRateInput(event.target.value)
+                  }
+                  onBlur={saveExchangeRate}
+                  inputMode="decimal"
+                  aria-label="Cambio euro peso messicano"
+                  style={{
+                    ...inputStyle,
+                    marginTop: 6,
+                    padding: "9px 10px",
+                    fontSize: 13,
+                  }}
+                />
+              </label>
+
+              <span
+                style={{
+                  paddingBottom: 10,
+                  color: theme.colors.secondary,
+                  fontSize: 11,
+                  fontWeight: 900,
+                }}
+              >
+                MXN
+              </span>
+            </div>
+          </div>
 
           <label style={labelStyle}>
             Pagata da
@@ -1141,7 +1415,7 @@ function Budget() {
                           fontSize: 17,
                         }}
                       >
-                        {formatCurrency(
+                        {displayMoney(
                           settlement.amount,
                         )}
                       </strong>
@@ -1240,7 +1514,7 @@ function Budget() {
                   }}
                 >
                   {isPositive ? "+" : ""}
-                  {formatCurrency(balance)}
+                  {displayMoney(balance)}
                 </strong>
               </article>
             );
@@ -1317,6 +1591,28 @@ function Budget() {
                   latestExpense.createdAt,
                 ).toLocaleDateString("it-IT")}
               </span>
+
+              {latestExpense.currency &&
+                latestExpense.originalAmount !==
+                  undefined && (
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: 4,
+                    color: theme.colors.textSoft,
+                    fontSize: 10,
+                  }}
+                >
+                  Inserita come{" "}
+                  {new Intl.NumberFormat("it-IT", {
+                    style: "currency",
+                    currency:
+                      latestExpense.currency,
+                  }).format(
+                    latestExpense.originalAmount,
+                  )}
+                </span>
+              )}
             </div>
 
             <strong
@@ -1325,7 +1621,7 @@ function Budget() {
                 fontSize: 18,
               }}
             >
-              {formatCurrency(latestExpense.amount)}
+              {displayMoney(latestExpense.amount)}
             </strong>
           </div>
         </section>
@@ -1480,7 +1776,7 @@ function Budget() {
                               .length
                           }{" "}
                           partecipanti ·{" "}
-                          {formatCurrency(
+                          {displayMoney(
                             expense.amount /
                               expense.participants.length,
                           )}{" "}
@@ -1504,7 +1800,7 @@ function Budget() {
                             fontSize: 16,
                           }}
                         >
-                          {formatCurrency(
+                          {displayMoney(
                             expense.amount,
                           )}
                         </strong>
@@ -1629,6 +1925,71 @@ function calculateSettlements(
   }
 
   return settlements;
+}
+
+function CurrencyToggle({
+  value,
+  onChange,
+  compact = false,
+}: {
+  value: Currency;
+  onChange: (currency: Currency) => void;
+  compact?: boolean;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Seleziona valuta"
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: 3,
+        padding: 3,
+        borderRadius: 12,
+        background: "rgba(7,26,46,0.56)",
+        border:
+          "1px solid rgba(255,255,255,0.09)",
+      }}
+    >
+      {(["EUR", "MXN"] as Currency[]).map(
+        (currency) => {
+          const isActive = value === currency;
+
+          return (
+            <button
+              key={currency}
+              type="button"
+              onClick={() =>
+                onChange(currency)
+              }
+              aria-pressed={isActive}
+              style={{
+                minWidth: compact ? 54 : 70,
+                padding: compact
+                  ? "7px 8px"
+                  : "9px 11px",
+                border: 0,
+                borderRadius: 9,
+                background: isActive
+                  ? theme.colors.primary
+                  : "transparent",
+                color: isActive
+                  ? theme.colors.background
+                  : theme.colors.textSoft,
+                fontSize: compact ? 10 : 11,
+                fontWeight: 900,
+                cursor: "pointer",
+              }}
+            >
+              {currency === "EUR"
+                ? "€ EUR"
+                : "$ MXN"}
+            </button>
+          );
+        },
+      )}
+    </div>
+  );
 }
 
 function HeroInfo({
