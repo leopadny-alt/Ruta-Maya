@@ -671,8 +671,9 @@ function Home({ onNavigate }: HomeProps) {
         </article>
       </section>
 
-      {(currentAccommodation ||
-        suggestedRestaurant) && (
+      {tripStatus === "during" &&
+        (currentAccommodation ||
+          suggestedRestaurant) && (
         <section
           style={{
             marginTop: 26,
@@ -862,67 +863,7 @@ function Home({ onNavigate }: HomeProps) {
         </section>
       )}
 
-      <section
-        style={{
-          marginTop: 27,
-        }}
-      >
-        <SectionTitle
-          eyebrow="Navigazione"
-          title="Accessi rapidi"
-        />
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "1fr 1fr",
-            gap: 11,
-            marginTop: 13,
-          }}
-        >
-          <QuickAction
-            icon="🗺️"
-            title="Smart Map"
-            subtitle="32 luoghi salvati"
-            accent="#6ED4FF"
-            onClick={() =>
-              onNavigate("map")
-            }
-          />
-
-          <QuickAction
-            icon="📅"
-            title="Itinerario"
-            subtitle="10 giornate"
-            accent={theme.colors.primary}
-            onClick={() =>
-              onNavigate("itinerary")
-            }
-          />
-
-          <QuickAction
-            icon="💰"
-            title="Budget"
-            subtitle="Spese del gruppo"
-            accent="#F4D58D"
-            onClick={() =>
-              onNavigate("budget")
-            }
-          />
-
-          <QuickAction
-            icon="✦"
-            title="Tutti gli strumenti"
-            subtitle="Agenda, SOS e altro"
-            accent="#C3A8FF"
-            onClick={() =>
-              onNavigate("more")
-            }
-          />
-        </div>
-      </section>
-
+      {tripStatus === "after" && (
       <section
         style={{
           marginTop: 27,
@@ -969,6 +910,7 @@ function Home({ onNavigate }: HomeProps) {
           />
         </div>
       </section>
+      )}
     </main>
   );
 }
@@ -1110,79 +1052,6 @@ function InfoPill({
     >
       {text}
     </span>
-  );
-}
-
-type QuickActionProps = {
-  icon: string;
-  title: string;
-  subtitle: string;
-  accent: string;
-  onClick: () => void;
-};
-
-function QuickAction({
-  icon,
-  title,
-  subtitle,
-  accent,
-  onClick,
-}: QuickActionProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        minHeight: 142,
-        padding: 17,
-        border: `1px solid ${accent}24`,
-        borderRadius: 22,
-        background:
-          "rgba(255,255,255,0.065)",
-        color: theme.colors.text,
-        textAlign: "left",
-        cursor: "pointer",
-        boxShadow:
-          "0 10px 25px rgba(0,0,0,0.12)",
-      }}
-    >
-      <span
-        style={{
-          width: 43,
-          height: 43,
-          display: "grid",
-          placeItems: "center",
-          borderRadius: 14,
-          background: `${accent}18`,
-          fontSize: 21,
-        }}
-      >
-        {icon}
-      </span>
-
-      <strong
-        style={{
-          display: "block",
-          marginTop: 16,
-          fontSize: 16,
-          lineHeight: 1.25,
-        }}
-      >
-        {title}
-      </strong>
-
-      <span
-        style={{
-          display: "block",
-          marginTop: 5,
-          color: theme.colors.textSoft,
-          fontSize: 11,
-          lineHeight: 1.4,
-        }}
-      >
-        {subtitle}
-      </span>
-    </button>
   );
 }
 
