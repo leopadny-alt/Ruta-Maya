@@ -1,254 +1,416 @@
-import { useEffect, useMemo, useState } from "react";
-import L from "leaflet";
 import {
-  MapContainer,
-  Marker,
-  Popup,
-  Polyline,
-  TileLayer,
-} from "react-leaflet";
-import {
-  locations,
-  type MapLocation,
-  type MapLocationType,
-} from "../data/locations";
-import { accommodations } from "../data/accommodations";
-import { restaurants } from "../data/restaurants";
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import Accommodations from "./Accommodations";
+import AppSettings from "./AppSettings";
+import BetaFeedback from "./BetaFeedback";
+import Bookings from "./Bookings";
+import CurrencyConverter from "./CurrencyConverter";
+import DailyAgenda from "./DailyAgenda";
+import DataBackup from "./DataBackup";
+import DocumentVault from "./DocumentVault";
+import EmergencyLocation from "./EmergencyLocation";
+import FoodGuide from "./FoodGuide";
+import FuelCalculator from "./FuelCalculator";
+import PackingChecklist from "./PackingChecklist";
+import Phrasebook from "./Phrasebook";
+import PreTripCheck from "./PreTripCheck";
+import PrivateTravelData from "./PrivateTravelData";
+import RoadTrip from "./RoadTrip";
+import TravelerProfile from "./TravelerProfile";
+import TravelChecklist from "./TravelChecklist";
+import TravelInfo from "./TravelInfo";
+import TripNotes from "./TripNotes";
+import TripSimulator from "./TripSimulator";
+import WeatherPage from "./WeatherPage";
+import WhatNow from "./WhatNow";
 import { theme } from "../styles/theme";
+import { getTravelerProfile } from "../utils/travelerProfile";
 
-type FilterType = MapLocationType | "all";
+type MoreSection =
+  | "menu"
+  | "accommodations"
+  | "food"
+  | "bookings"
+  | "roadtrip"
+  | "checklist"
+  | "currency"
+  | "phrasebook"
+  | "notes"
+  | "backup"
+  | "info"
+  | "weather"
+  | "fuel"
+  | "settings"
+  | "simulator"
+  | "pretrip"
+  | "private-data"
+  | "documents"
+  | "agenda"
+  | "emergency-location"
+  | "travel-checklist"
+  | "what-now"
+  | "beta-feedback"
+  | "profile";
 
-const FAVORITES_KEY = "ruta-maya-map-favorites";
+type ToolCategory =
+  | "In evidenza"
+  | "Viaggio"
+  | "Utilità"
+  | "Sicurezza"
+  | "Impostazioni e test";
 
-const accommodationLocations: MapLocation[] = accommodations.map(
-  (accommodation) => ({
-    id: 100 + accommodation.id,
-    name: `Alloggio ${accommodation.location}`,
-    type: "accommodation",
-    latitude: accommodation.latitude,
-    longitude: accommodation.longitude,
-    description: accommodation.description,
-    details: `${accommodation.dates} · ${accommodation.nights}`,
-    externalUrl: accommodation.url,
-  }),
-);
-
-const restaurantLocations: MapLocation[] = restaurants.map(
-  (restaurant) => ({
-    id: 200 + restaurant.id,
-    name: restaurant.name,
-    type: "restaurant",
-    latitude: restaurant.latitude,
-    longitude: restaurant.longitude,
-    description: restaurant.description,
-    details: `${restaurant.city} · ${restaurant.category} · ${restaurant.price}`,
-    externalUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-      restaurant.mapsQuery,
-    )}`,
-  }),
-);
-
-const allLocations: MapLocation[] = [
-  ...locations,
-  ...accommodationLocations,
-  ...restaurantLocations,
-];
-
-const routeNames = [
-  "Cancún",
-  "Isla Mujeres",
-  "Puerto Morelos",
-  "Tulum",
-  "Valladolid",
-  "Ek’ Balam",
-  "Valladolid",
-  "Chichén Itzá",
-  "Cenote Yokdzonot",
-  "Mérida",
-  "Uxmal",
-  "Kabah",
-  "Mérida",
-  "Chiquilá",
-  "Isla Holbox",
-  "Chiquilá",
-  "Cancún",
-];
-
-const route = routeNames
-  .map((name) =>
-    locations.find((location) => location.name === name),
-  )
-  .filter(
-    (location): location is MapLocation =>
-      location !== undefined,
-  )
-  .map(
-    (location) =>
-      [location.latitude, location.longitude] as [
-        number,
-        number,
-      ],
-  );
-
-const categoryConfig: Record<
-  MapLocationType,
-  {
-    label: string;
-    shortLabel: string;
-    color: string;
-  }
-> = {
-  city: {
-    label: "Città",
-    shortLabel: "C",
-    color: "#11C5BF",
-  },
-  beach: {
-    label: "Mare",
-    shortLabel: "M",
-    color: "#48B8E8",
-  },
-  ruins: {
-    label: "Siti Maya",
-    shortLabel: "S",
-    color: "#F4D58D",
-  },
-  cenote: {
-    label: "Cenote",
-    shortLabel: "O",
-    color: "#6ED4FF",
-  },
-  ferry: {
-    label: "Traghetti",
-    shortLabel: "T",
-    color: "#BFA7FF",
-  },
-  accommodation: {
-    label: "Alloggi",
-    shortLabel: "A",
-    color: "#FFB86B",
-  },
-  restaurant: {
-    label: "Ristoranti",
-    shortLabel: "R",
-    color: "#FF8E8E",
-  },
+type MenuItem = {
+  id: Exclude<MoreSection, "menu">;
+  icon: string;
+  title: string;
+  subtitle: string;
+  category: ToolCategory;
+  accent: string;
+  badge?: string;
+  featured?: boolean;
 };
 
-const categories: {
-  id: FilterType;
-  label: string;
-}[] = [
-  { id: "all", label: "Tutti" },
-  { id: "city", label: "Città" },
-  { id: "beach", label: "Mare" },
-  { id: "ruins", label: "Siti Maya" },
-  { id: "cenote", label: "Cenote" },
-  { id: "ferry", label: "Traghetti" },
-  { id: "accommodation", label: "Alloggi" },
-  { id: "restaurant", label: "Ristoranti" },
+const menuItems: MenuItem[] = [
+  {
+    id: "what-now",
+    icon: "🧭",
+    title: "Cosa faccio adesso?",
+    subtitle: "La prossima azione del viaggio",
+    category: "In evidenza",
+    accent: "#6ED4FF",
+    badge: "Live",
+    featured: true,
+  },
+  {
+    id: "agenda",
+    icon: "🕒",
+    title: "Agenda del giorno",
+    subtitle: "Attività, orari e spostamenti",
+    category: "In evidenza",
+    accent: "#11C5BF",
+    featured: true,
+  },
+  {
+    id: "bookings",
+    icon: "🎟️",
+    title: "Prenotazioni",
+    subtitle: "Voli, traghetti, auto e assicurazione",
+    category: "In evidenza",
+    accent: "#C3A8FF",
+    badge: "9",
+    featured: true,
+  },
+  {
+    id: "emergency-location",
+    icon: "🆘",
+    title: "SOS e posizione",
+    subtitle: "Emergenze e condivisione GPS",
+    category: "In evidenza",
+    accent: "#FF8E8E",
+    featured: true,
+  },
+
+  {
+    id: "accommodations",
+    icon: "🏨",
+    title: "Alloggi",
+    subtitle: "6 prenotazioni Airbnb",
+    category: "Viaggio",
+    accent: "#FFB86B",
+  },
+  {
+    id: "food",
+    icon: "🍽️",
+    title: "Food Guide",
+    subtitle: "Ristoranti e locali consigliati",
+    category: "Viaggio",
+    accent: "#FF9D9D",
+  },
+  {
+    id: "roadtrip",
+    icon: "🚗",
+    title: "Road Trip",
+    subtitle: "Tratte, tempi e soste",
+    category: "Viaggio",
+    accent: "#6ED4FF",
+  },
+  {
+    id: "documents",
+    icon: "🗂️",
+    title: "Cassaforte documenti",
+    subtitle: "Voucher e biglietti offline",
+    category: "Viaggio",
+    accent: "#C3A8FF",
+    badge: "Offline",
+  },
+  {
+    id: "travel-checklist",
+    icon: "✅",
+    title: "Checklist viaggio",
+    subtitle: "Preparazione e cose da ricordare",
+    category: "Viaggio",
+    accent: "#11C5BF",
+  },
+  {
+    id: "checklist",
+    icon: "🎒",
+    title: "Checklist valigia",
+    subtitle: "Prepara tutto per la partenza",
+    category: "Viaggio",
+    accent: "#F4D58D",
+  },
+
+  {
+    id: "weather",
+    icon: "🌤️",
+    title: "Meteo Yucatán",
+    subtitle: "Previsioni per tutte le tappe",
+    category: "Utilità",
+    accent: "#6ED4FF",
+  },
+  {
+    id: "fuel",
+    icon: "⛽",
+    title: "Carburante",
+    subtitle: "Consumi e divisione dei costi",
+    category: "Utilità",
+    accent: "#FFB86B",
+  },
+  {
+    id: "currency",
+    icon: "💱",
+    title: "Cambio valuta",
+    subtitle: "Euro e peso messicano",
+    category: "Utilità",
+    accent: "#11C5BF",
+  },
+  {
+    id: "phrasebook",
+    icon: "💬",
+    title: "Frasario spagnolo",
+    subtitle: "Frasi utili anche offline",
+    category: "Utilità",
+    accent: "#C3A8FF",
+  },
+  {
+    id: "notes",
+    icon: "📝",
+    title: "Note di viaggio",
+    subtitle: "Promemoria e informazioni offline",
+    category: "Utilità",
+    accent: "#F4D58D",
+  },
+
+  {
+    id: "info",
+    icon: "☎️",
+    title: "Info e numeri utili",
+    subtitle: "Emergenze e contatti personali",
+    category: "Sicurezza",
+    accent: "#FF8E8E",
+  },
+  {
+    id: "backup",
+    icon: "💾",
+    title: "Backup dati",
+    subtitle: "Salva e trasferisci i dati dell’app",
+    category: "Sicurezza",
+    accent: "#6ED4FF",
+  },
+  {
+    id: "private-data",
+    icon: "🔐",
+    title: "Codici privati",
+    subtitle: "PNR e riferimenti sul telefono",
+    category: "Sicurezza",
+    accent: "#C3A8FF",
+  },
+  {
+    id: "pretrip",
+    icon: "🛡️",
+    title: "Controllo pre-partenza",
+    subtitle: "Verifica che l’app sia pronta",
+    category: "Sicurezza",
+    accent: "#11C5BF",
+    badge: "100%",
+  },
+
+  {
+    id: "profile",
+    icon: "👤",
+    title: "Il mio profilo",
+    subtitle: "Personalizza questo dispositivo",
+    category: "Impostazioni e test",
+    accent: "#6ED4FF",
+  },
+  {
+    id: "settings",
+    icon: "⚙️",
+    title: "Aggiornamenti app",
+    subtitle: "Versione, cache e installazione",
+    category: "Impostazioni e test",
+    accent: "#C3A8FF",
+  },
+  {
+    id: "simulator",
+    icon: "🗓️",
+    title: "Simula il viaggio",
+    subtitle: "Prova in anticipo ogni giornata",
+    category: "Impostazioni e test",
+    accent: "#F4D58D",
+  },
+  {
+    id: "beta-feedback",
+    icon: "🧪",
+    title: "Diario beta",
+    subtitle: "Problemi, idee e feedback",
+    category: "Impostazioni e test",
+    accent: "#11C5BF",
+  },
 ];
 
-function createMarkerIcon(type: MapLocationType) {
-  const config = categoryConfig[type];
+const categories: ToolCategory[] = [
+  "Viaggio",
+  "Utilità",
+  "Sicurezza",
+  "Impostazioni e test",
+];
 
-  return L.divIcon({
-    className: "",
-    html: `
-      <div
-        style="
-          width: 40px;
-          height: 40px;
-          display: grid;
-          place-items: center;
-          border-radius: 14px;
-          background: #071A2E;
-          border: 3px solid ${config.color};
-          color: ${config.color};
-          font-family: Arial, sans-serif;
-          font-size: 15px;
-          font-weight: 900;
-          box-shadow: 0 8px 18px rgba(0,0,0,0.38);
-        "
-      >
-        ${config.shortLabel}
+function More() {
+  const [section, setSection] =
+    useState<MoreSection>("menu");
+
+  const [searchQuery, setSearchQuery] =
+    useState("");
+
+  const traveler = getTravelerProfile();
+
+  const pages: Partial<
+    Record<MoreSection, ReactNode>
+  > = {
+    accommodations: <Accommodations />,
+    food: <FoodGuide />,
+    bookings: <Bookings />,
+    roadtrip: <RoadTrip />,
+    fuel: <FuelCalculator />,
+    checklist: <PackingChecklist />,
+    weather: <WeatherPage />,
+    currency: <CurrencyConverter />,
+    phrasebook: <Phrasebook />,
+    notes: <TripNotes />,
+    backup: <DataBackup />,
+    info: <TravelInfo />,
+    settings: <AppSettings />,
+    pretrip: <PreTripCheck />,
+    simulator: <TripSimulator />,
+    "private-data": <PrivateTravelData />,
+    documents: <DocumentVault />,
+    agenda: <DailyAgenda />,
+    profile: <TravelerProfile />,
+    "emergency-location": (
+      <EmergencyLocation />
+    ),
+    "what-now": <WhatNow />,
+    "travel-checklist": (
+      <TravelChecklist />
+    ),
+    "beta-feedback": <BetaFeedback />,
+  };
+
+  const normalizedSearch =
+    searchQuery.trim().toLocaleLowerCase("it");
+
+  const filteredItems = useMemo(() => {
+    if (!normalizedSearch) {
+      return menuItems;
+    }
+
+    return menuItems.filter((item) => {
+      const searchableText = [
+        item.title,
+        item.subtitle,
+        item.category,
+      ]
+        .join(" ")
+        .toLocaleLowerCase("it");
+
+      return searchableText.includes(
+        normalizedSearch,
+      );
+    });
+  }, [normalizedSearch]);
+
+  const featuredItems = filteredItems.filter(
+    (item) => item.featured,
+  );
+
+  function openSection(
+    selectedSection: Exclude<
+      MoreSection,
+      "menu"
+    >,
+  ) {
+    setSection(selectedSection);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "instant",
+    });
+  }
+
+  function returnToMenu() {
+    setSection("menu");
+
+    window.scrollTo({
+      top: 0,
+      behavior: "instant",
+    });
+  }
+
+  if (section !== "menu") {
+    return (
+      <div>
+        <button
+          type="button"
+          onClick={returnToMenu}
+          style={{
+            position: "fixed",
+            top:
+              "calc(12px + env(safe-area-inset-top))",
+            left: 15,
+            zIndex: 1000,
+            display: "flex",
+            alignItems: "center",
+            gap: 7,
+            padding: "10px 13px",
+            border:
+              "1px solid rgba(255,255,255,0.14)",
+            borderRadius: 999,
+            background:
+              "rgba(7,26,46,0.88)",
+            boxShadow:
+              "0 10px 28px rgba(0,0,0,0.26)",
+            color: theme.colors.text,
+            fontSize: 13,
+            fontWeight: 850,
+            cursor: "pointer",
+            backdropFilter: "blur(18px)",
+            WebkitBackdropFilter:
+              "blur(18px)",
+          }}
+        >
+          <span style={{ fontSize: 17 }}>
+            ‹
+          </span>
+          Strumenti
+        </button>
+
+        {pages[section]}
       </div>
-    `,
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
-    popupAnchor: [0, -40],
-  });
-}
-
-function getGoogleMapsUrl(location: MapLocation) {
-  return `https://www.google.com/maps/search/?api=1&query=${location.latitude},${location.longitude}`;
-}
-
-function MapPage() {
-  const [selectedCategory, setSelectedCategory] =
-    useState<FilterType>("all");
-
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
-
-  useEffect(() => {
-    const savedFavorites = localStorage.getItem(FAVORITES_KEY);
-
-    if (!savedFavorites) {
-      return;
-    }
-
-    try {
-      setFavoriteIds(JSON.parse(savedFavorites));
-    } catch {
-      localStorage.removeItem(FAVORITES_KEY);
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(
-      FAVORITES_KEY,
-      JSON.stringify(favoriteIds),
     );
-  }, [favoriteIds]);
-
-  const visibleLocations = useMemo(() => {
-    const normalizedQuery = searchQuery
-      .trim()
-      .toLocaleLowerCase("it");
-
-    return allLocations.filter((location) => {
-      const matchesCategory =
-        selectedCategory === "all" ||
-        location.type === selectedCategory;
-
-      const matchesSearch =
-        !normalizedQuery ||
-        location.name
-          .toLocaleLowerCase("it")
-          .includes(normalizedQuery) ||
-        location.description
-          .toLocaleLowerCase("it")
-          .includes(normalizedQuery) ||
-        location.details
-          ?.toLocaleLowerCase("it")
-          .includes(normalizedQuery);
-
-      return matchesCategory && matchesSearch;
-    });
-  }, [searchQuery, selectedCategory]);
-
-  function toggleFavorite(id: number) {
-    setFavoriteIds((currentIds) => {
-      if (currentIds.includes(id)) {
-        return currentIds.filter(
-          (favoriteId) => favoriteId !== id,
-        );
-      }
-
-      return [...currentIds, id];
-    });
   }
 
   return (
@@ -256,399 +418,716 @@ function MapPage() {
       style={{
         minHeight: "100vh",
         boxSizing: "border-box",
-        padding: "28px 20px 112px",
-        background: `linear-gradient(180deg, ${theme.colors.background}, ${theme.colors.backgroundGradient})`,
+        padding:
+          "calc(23px + env(safe-area-inset-top)) 18px 116px",
+        background: `
+          radial-gradient(
+            circle at 92% 3%,
+            rgba(195,168,255,0.13),
+            transparent 27%
+          ),
+          radial-gradient(
+            circle at 8% 34%,
+            rgba(17,197,191,0.10),
+            transparent 25%
+          ),
+          linear-gradient(
+            180deg,
+            ${theme.colors.background},
+            ${theme.colors.backgroundGradient}
+          )
+        `,
         color: theme.colors.text,
         fontFamily:
           "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       }}
     >
-      <p
-        style={{
-          margin: 0,
-          color: theme.colors.primary,
-          fontSize: 13,
-          fontWeight: 800,
-          letterSpacing: 1.2,
-          textTransform: "uppercase",
-        }}
-      >
-        Road trip
-      </p>
-
-      <h1 style={{ margin: "8px 0 6px", fontSize: 34 }}>
-        Smart Map
-      </h1>
-
-      <p
-        style={{
-          marginTop: 0,
-          marginBottom: 18,
-          color: theme.colors.textSoft,
-        }}
-      >
-        Tappe, alloggi e ristoranti in un’unica mappa
-      </p>
-
-      <input
-        type="search"
-        value={searchQuery}
-        onChange={(event) =>
-          setSearchQuery(event.target.value)
-        }
-        placeholder="Cerca un luogo..."
-        style={{
-          width: "100%",
-          boxSizing: "border-box",
-          marginBottom: 14,
-          padding: "14px 16px",
-          border: "1px solid rgba(255,255,255,0.14)",
-          borderRadius: 17,
-          outline: "none",
-          background: "rgba(255,255,255,0.09)",
-          color: theme.colors.text,
-          fontSize: 16,
-        }}
-      />
-
-      <div
-        style={{
-          display: "flex",
-          gap: 9,
-          marginBottom: 18,
-          paddingBottom: 5,
-          overflowX: "auto",
-        }}
-      >
-        {categories.map((category) => {
-          const isActive =
-            selectedCategory === category.id;
-
-          const categoryColor =
-            category.id === "all"
-              ? theme.colors.primary
-              : categoryConfig[category.id].color;
-
-          return (
-            <button
-              key={category.id}
-              type="button"
-              onClick={() =>
-                setSelectedCategory(category.id)
-              }
-              style={{
-                flexShrink: 0,
-                padding: "10px 14px",
-                border: `1px solid ${
-                  isActive
-                    ? categoryColor
-                    : "rgba(255,255,255,0.12)"
-                }`,
-                borderRadius: 999,
-                background: isActive
-                  ? categoryColor
-                  : theme.colors.card,
-                color: isActive
-                  ? theme.colors.background
-                  : theme.colors.text,
-                fontWeight: 800,
-                cursor: "pointer",
-              }}
-            >
-              {category.label}
-            </button>
-          );
-        })}
-      </div>
-
-      <section
-        style={{
-          overflow: "hidden",
-          borderRadius: 24,
-          border: "1px solid rgba(255,255,255,0.12)",
-          boxShadow: "0 18px 40px rgba(0,0,0,0.25)",
-        }}
-      >
-        <MapContainer
-          center={[20.75, -88.2]}
-          zoom={7}
-          scrollWheelZoom
-          style={{
-            width: "100%",
-            height: "58vh",
-            minHeight: 430,
-          }}
-        >
-          <TileLayer
-            attribution="&copy; OpenStreetMap contributors"
-            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-
-          <Polyline
-            positions={route}
-            pathOptions={{
-              color: theme.colors.primary,
-              weight: 4,
-              opacity: 0.75,
-            }}
-          />
-
-          {visibleLocations.map((location) => {
-            const config = categoryConfig[location.type];
-
-            return (
-              <Marker
-                key={location.id}
-                position={[
-                  location.latitude,
-                  location.longitude,
-                ]}
-                icon={createMarkerIcon(location.type)}
-              >
-                <Popup>
-                  <strong>
-                    {config.shortLabel} · {location.name}
-                  </strong>
-
-                  {location.details && (
-                    <p>{location.details}</p>
-                  )}
-
-                  <p>{location.description}</p>
-
-                  <a
-                    href={getGoogleMapsUrl(location)}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Apri in Google Maps
-                  </a>
-
-                  {location.externalUrl && (
-                    <>
-                      <br />
-                      <br />
-
-                      <a
-                        href={location.externalUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Apri collegamento
-                      </a>
-                    </>
-                  )}
-                </Popup>
-              </Marker>
-            );
-          })}
-        </MapContainer>
-      </section>
-
-      <section style={{ marginTop: 24 }}>
+      <header>
         <div
           style={{
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-start",
             justifyContent: "space-between",
-            gap: 12,
+            gap: 16,
           }}
         >
-          <h2 style={{ margin: 0, fontSize: 21 }}>
-            Luoghi visibili
-          </h2>
+          <div>
+            <p
+              style={{
+                margin: 0,
+                color: theme.colors.primary,
+                fontSize: 11,
+                fontWeight: 900,
+                letterSpacing: 1.6,
+                textTransform: "uppercase",
+              }}
+            >
+              Ruta Maya
+            </p>
 
-          <span
+            <h1
+              style={{
+                margin: "7px 0 0",
+                fontSize: 34,
+                lineHeight: 1,
+                letterSpacing: -1,
+              }}
+            >
+              Strumenti
+            </h1>
+
+            <p
+              style={{
+                margin: "9px 0 0",
+                color:
+                  theme.colors.textSoft,
+                fontSize: 13,
+                lineHeight: 1.45,
+              }}
+            >
+              {traveler
+                ? `Tutto ciò che serve a ${traveler} durante il viaggio.`
+                : "Tutto ciò che serve durante il viaggio."}
+            </p>
+          </div>
+
+          <div
             style={{
-              padding: "7px 10px",
-              borderRadius: 999,
-              background: "rgba(17,197,191,0.16)",
-              color: theme.colors.primary,
-              fontSize: 13,
-              fontWeight: 800,
+              width: 55,
+              height: 55,
+              display: "grid",
+              placeItems: "center",
+              flexShrink: 0,
+              borderRadius: 18,
+              background:
+                "linear-gradient(135deg, rgba(195,168,255,0.25), rgba(17,197,191,0.18))",
+              border:
+                "1px solid rgba(255,255,255,0.11)",
+              fontSize: 25,
+              boxShadow:
+                "0 14px 32px rgba(0,0,0,0.22)",
             }}
           >
-            {visibleLocations.length}
-          </span>
+            ✦
+          </div>
         </div>
 
         <div
           style={{
-            display: "grid",
-            gap: 11,
-            marginTop: 14,
+            position: "relative",
+            marginTop: 23,
           }}
         >
-          {visibleLocations.map((location) => {
-            const config = categoryConfig[location.type];
-            const isFavorite = favoriteIds.includes(location.id);
-
-            return (
-              <article
-                key={location.id}
-                style={{
-                  padding: 16,
-                  borderRadius: 20,
-                  background: theme.colors.card,
-                  border: `1px solid ${config.color}35`,
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 13,
-                  }}
-                >
-                  <span
-                    style={{
-                      width: 43,
-                      height: 43,
-                      display: "grid",
-                      placeItems: "center",
-                      flexShrink: 0,
-                      borderRadius: 14,
-                      background: `${config.color}20`,
-                      color: config.color,
-                      fontSize: 15,
-                      fontWeight: 900,
-                    }}
-                  >
-                    {config.shortLabel}
-                  </span>
-
-                  <span style={{ flex: 1 }}>
-                    <strong
-                      style={{
-                        display: "block",
-                        fontSize: 16,
-                      }}
-                    >
-                      {location.name}
-                    </strong>
-
-                    {location.details && (
-                      <span
-                        style={{
-                          display: "block",
-                          marginTop: 4,
-                          color: config.color,
-                          fontSize: 12,
-                          fontWeight: 750,
-                        }}
-                      >
-                        {location.details}
-                      </span>
-                    )}
-
-                    <span
-                      style={{
-                        display: "block",
-                        marginTop: 6,
-                        color: theme.colors.textSoft,
-                        fontSize: 13,
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      {location.description}
-                    </span>
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      toggleFavorite(location.id)
-                    }
-                    aria-label={
-                      isFavorite
-                        ? "Rimuovi dai preferiti"
-                        : "Aggiungi ai preferiti"
-                    }
-                    style={{
-                      padding: 0,
-                      border: 0,
-                      background: "transparent",
-                      color: isFavorite
-                        ? theme.colors.secondary
-                        : theme.colors.textSoft,
-                      fontSize: 24,
-                      cursor: "pointer",
-                    }}
-                  >
-                    {isFavorite ? "★" : "☆"}
-                  </button>
-                </div>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: location.externalUrl
-                      ? "1fr 1fr"
-                      : "1fr",
-                    gap: 8,
-                    marginTop: 14,
-                  }}
-                >
-                  <a
-                    href={getGoogleMapsUrl(location)}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{
-                      padding: "11px 12px",
-                      borderRadius: 14,
-                      background: theme.colors.primary,
-                      color: theme.colors.background,
-                      textAlign: "center",
-                      textDecoration: "none",
-                      fontSize: 13,
-                      fontWeight: 800,
-                    }}
-                  >
-                    Portami qui
-                  </a>
-
-                  {location.externalUrl && (
-                    <a
-                      href={location.externalUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        padding: "11px 12px",
-                        borderRadius: 14,
-                        background: theme.colors.secondary,
-                        color: theme.colors.background,
-                        textAlign: "center",
-                        textDecoration: "none",
-                        fontSize: 13,
-                        fontWeight: 800,
-                      }}
-                    >
-                      Apri dettagli
-                    </a>
-                  )}
-                </div>
-              </article>
-            );
-          })}
-        </div>
-
-        {visibleLocations.length === 0 && (
-          <div
+          <span
+            aria-hidden="true"
             style={{
-              marginTop: 14,
-              padding: 20,
-              borderRadius: 20,
-              background: theme.colors.card,
-              color: theme.colors.textSoft,
-              textAlign: "center",
+              position: "absolute",
+              top: "50%",
+              left: 15,
+              zIndex: 1,
+              transform:
+                "translateY(-50%)",
+              color:
+                theme.colors.textSoft,
+              fontSize: 18,
             }}
           >
-            Nessun luogo corrisponde alla ricerca.
-          </div>
+            ⌕
+          </span>
+
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) =>
+              setSearchQuery(
+                event.target.value,
+              )
+            }
+            placeholder="Cerca uno strumento…"
+            aria-label="Cerca uno strumento"
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+              padding: "14px 44px 14px 45px",
+              border:
+                "1px solid rgba(255,255,255,0.10)",
+              borderRadius: 18,
+              outline: "none",
+              background:
+                "rgba(255,255,255,0.07)",
+              boxShadow:
+                "0 11px 28px rgba(0,0,0,0.12)",
+              color: theme.colors.text,
+              fontSize: 15,
+              appearance: "none",
+            }}
+          />
+
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() =>
+                setSearchQuery("")
+              }
+              aria-label="Cancella ricerca"
+              style={{
+                position: "absolute",
+                top: "50%",
+                right: 10,
+                width: 31,
+                height: 31,
+                display: "grid",
+                placeItems: "center",
+                transform:
+                  "translateY(-50%)",
+                border: 0,
+                borderRadius: 10,
+                background:
+                  "rgba(255,255,255,0.07)",
+                color:
+                  theme.colors.textSoft,
+                fontSize: 15,
+                cursor: "pointer",
+              }}
+            >
+              ×
+            </button>
+          )}
+        </div>
+      </header>
+
+      {!normalizedSearch &&
+        featuredItems.length > 0 && (
+          <section
+            style={{
+              marginTop: 27,
+            }}
+          >
+            <SectionHeading
+              eyebrow="Essenziali"
+              title="In evidenza"
+              count={featuredItems.length}
+            />
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "1fr 1fr",
+                gap: 11,
+                marginTop: 14,
+              }}
+            >
+              {featuredItems.map(
+                (item) => (
+                  <FeaturedTool
+                    key={item.id}
+                    item={item}
+                    onClick={() =>
+                      openSection(item.id)
+                    }
+                  />
+                ),
+              )}
+            </div>
+          </section>
         )}
-      </section>
+
+      {normalizedSearch ? (
+        <section
+          style={{
+            marginTop: 27,
+          }}
+        >
+          <SectionHeading
+            eyebrow="Ricerca"
+            title="Risultati"
+            count={filteredItems.length}
+          />
+
+          {filteredItems.length > 0 ? (
+            <div
+              style={{
+                display: "grid",
+                gap: 10,
+                marginTop: 14,
+              }}
+            >
+              {filteredItems.map(
+                (item) => (
+                  <ToolRow
+                    key={item.id}
+                    item={item}
+                    onClick={() =>
+                      openSection(item.id)
+                    }
+                  />
+                ),
+              )}
+            </div>
+          ) : (
+            <div
+              style={{
+                marginTop: 14,
+                padding: 25,
+                borderRadius: 22,
+                background:
+                  "rgba(255,255,255,0.06)",
+                border:
+                  "1px solid rgba(255,255,255,0.08)",
+                textAlign: "center",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 34,
+                }}
+              >
+                🔎
+              </span>
+
+              <h2
+                style={{
+                  margin: "13px 0 0",
+                  fontSize: 19,
+                }}
+              >
+                Nessun risultato
+              </h2>
+
+              <p
+                style={{
+                  margin: "8px 0 0",
+                  color:
+                    theme.colors.textSoft,
+                  fontSize: 13,
+                  lineHeight: 1.5,
+                }}
+              >
+                Prova a cercare “volo”,
+                “meteo”, “SOS” oppure
+                “backup”.
+              </p>
+            </div>
+          )}
+        </section>
+      ) : (
+        categories.map((category) => {
+          const categoryItems =
+            menuItems.filter(
+              (item) =>
+                item.category ===
+                category,
+            );
+
+          return (
+            <section
+              key={category}
+              style={{
+                marginTop: 29,
+              }}
+            >
+              <SectionHeading
+                eyebrow={getCategoryEyebrow(
+                  category,
+                )}
+                title={category}
+                count={
+                  categoryItems.length
+                }
+              />
+
+              <div
+                style={{
+                  display: "grid",
+                  gap: 9,
+                  marginTop: 14,
+                }}
+              >
+                {categoryItems.map(
+                  (item) => (
+                    <ToolRow
+                      key={item.id}
+                      item={item}
+                      onClick={() =>
+                        openSection(
+                          item.id,
+                        )
+                      }
+                    />
+                  ),
+                )}
+              </div>
+            </section>
+          );
+        })
+      )}
+
+      {!normalizedSearch && (
+        <section
+          style={{
+            marginTop: 29,
+            padding: 20,
+            borderRadius: 23,
+            background:
+              "linear-gradient(135deg, rgba(17,197,191,0.12), rgba(195,168,255,0.08))",
+            border:
+              "1px solid rgba(255,255,255,0.09)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 13,
+            }}
+          >
+            <span
+              style={{
+                width: 45,
+                height: 45,
+                display: "grid",
+                placeItems: "center",
+                flexShrink: 0,
+                borderRadius: 15,
+                background:
+                  "rgba(17,197,191,0.14)",
+                fontSize: 21,
+              }}
+            >
+              🇲🇽
+            </span>
+
+            <div>
+              <strong
+                style={{
+                  display: "block",
+                  fontSize: 17,
+                }}
+              >
+                Ruta Maya v1.0
+              </strong>
+
+              <p
+                style={{
+                  margin: "7px 0 0",
+                  color:
+                    theme.colors.textSoft,
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                }}
+              >
+                22 strumenti disponibili
+                per il viaggio e il test
+                sul campo.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
     </main>
   );
 }
 
-export default MapPage;
+function getCategoryEyebrow(
+  category: ToolCategory,
+) {
+  if (category === "Viaggio") {
+    return "Organizzazione";
+  }
+
+  if (category === "Utilità") {
+    return "Sul posto";
+  }
+
+  if (category === "Sicurezza") {
+    return "Protezione dati";
+  }
+
+  return "Applicazione";
+}
+
+function SectionHeading({
+  eyebrow,
+  title,
+  count,
+}: {
+  eyebrow: string;
+  title: string;
+  count: number;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "space-between",
+        gap: 14,
+      }}
+    >
+      <div>
+        <p
+          style={{
+            margin: 0,
+            color: theme.colors.primary,
+            fontSize: 10,
+            fontWeight: 900,
+            letterSpacing: 1.1,
+            textTransform: "uppercase",
+          }}
+        >
+          {eyebrow}
+        </p>
+
+        <h2
+          style={{
+            margin: "5px 0 0",
+            fontSize: 22,
+            lineHeight: 1.2,
+            letterSpacing: -0.3,
+          }}
+        >
+          {title}
+        </h2>
+      </div>
+
+      <span
+        style={{
+          minWidth: 29,
+          padding: "6px 9px",
+          borderRadius: 999,
+          background:
+            "rgba(17,197,191,0.12)",
+          color: theme.colors.primary,
+          fontSize: 10,
+          fontWeight: 900,
+          textAlign: "center",
+        }}
+      >
+        {count}
+      </span>
+    </div>
+  );
+}
+
+function FeaturedTool({
+  item,
+  onClick,
+}: {
+  item: MenuItem;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        minWidth: 0,
+        minHeight: 169,
+        padding: 17,
+        border: `1px solid ${item.accent}25`,
+        borderRadius: 23,
+        background:
+          "rgba(255,255,255,0.07)",
+        boxShadow:
+          "0 14px 32px rgba(0,0,0,0.14)",
+        color: theme.colors.text,
+        textAlign: "left",
+        cursor: "pointer",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent:
+            "space-between",
+          gap: 8,
+        }}
+      >
+        <span
+          style={{
+            width: 47,
+            height: 47,
+            display: "grid",
+            placeItems: "center",
+            borderRadius: 16,
+            background: `${item.accent}18`,
+            fontSize: 22,
+          }}
+        >
+          {item.icon}
+        </span>
+
+        {item.badge && (
+          <span
+            style={{
+              padding: "5px 7px",
+              borderRadius: 999,
+              background: `${item.accent}15`,
+              color: item.accent,
+              fontSize: 9,
+              fontWeight: 900,
+              textTransform: "uppercase",
+            }}
+          >
+            {item.badge}
+          </span>
+        )}
+      </div>
+
+      <strong
+        style={{
+          display: "block",
+          marginTop: 17,
+          fontSize: 16,
+          lineHeight: 1.25,
+        }}
+      >
+        {item.title}
+      </strong>
+
+      <span
+        style={{
+          display: "block",
+          marginTop: 6,
+          color: theme.colors.textSoft,
+          fontSize: 11,
+          lineHeight: 1.45,
+        }}
+      >
+        {item.subtitle}
+      </span>
+
+      <span
+        style={{
+          display: "block",
+          marginTop: 13,
+          color: item.accent,
+          fontSize: 12,
+          fontWeight: 900,
+        }}
+      >
+        Apri →
+      </span>
+    </button>
+  );
+}
+
+function ToolRow({
+  item,
+  onClick,
+}: {
+  item: MenuItem;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        gap: 13,
+        padding: 14,
+        border:
+          "1px solid rgba(255,255,255,0.08)",
+        borderRadius: 19,
+        background:
+          "rgba(255,255,255,0.06)",
+        boxShadow:
+          "0 8px 22px rgba(0,0,0,0.10)",
+        color: theme.colors.text,
+        textAlign: "left",
+        cursor: "pointer",
+      }}
+    >
+      <span
+        style={{
+          width: 45,
+          height: 45,
+          display: "grid",
+          placeItems: "center",
+          flexShrink: 0,
+          borderRadius: 15,
+          background: `${item.accent}17`,
+          fontSize: 21,
+        }}
+      >
+        {item.icon}
+      </span>
+
+      <span
+        style={{
+          flex: 1,
+          minWidth: 0,
+        }}
+      >
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 7,
+          }}
+        >
+          <strong
+            style={{
+              fontSize: 15,
+              lineHeight: 1.3,
+            }}
+          >
+            {item.title}
+          </strong>
+
+          {item.badge && (
+            <span
+              style={{
+                padding: "4px 6px",
+                borderRadius: 999,
+                background: `${item.accent}15`,
+                color: item.accent,
+                fontSize: 8,
+                fontWeight: 900,
+                textTransform:
+                  "uppercase",
+              }}
+            >
+              {item.badge}
+            </span>
+          )}
+        </span>
+
+        <span
+          style={{
+            display: "block",
+            marginTop: 5,
+            overflow: "hidden",
+            color:
+              theme.colors.textSoft,
+            fontSize: 11,
+            lineHeight: 1.4,
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {item.subtitle}
+        </span>
+      </span>
+
+      <span
+        style={{
+          flexShrink: 0,
+          color: item.accent,
+          fontSize: 22,
+          lineHeight: 1,
+        }}
+      >
+        ›
+      </span>
+    </button>
+  );
+}
+
+export default More;
