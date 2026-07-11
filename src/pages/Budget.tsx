@@ -1,5 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { theme } from "../styles/theme";
+import { getTravelerProfile } from "../utils/travelerProfile";
 
 type Expense = {
   id: string;
@@ -16,8 +21,11 @@ type Settlement = {
   amount: number;
 };
 
-const EXPENSES_STORAGE_KEY = "ruta-maya-expenses";
-const PEOPLE_STORAGE_KEY = "ruta-maya-people";
+const EXPENSES_STORAGE_KEY =
+  "ruta-maya-expenses";
+
+const PEOPLE_STORAGE_KEY =
+  "ruta-maya-people";
 
 const defaultPeople = [
   "Leonardo",
@@ -27,28 +35,59 @@ const defaultPeople = [
   "Amico 5",
 ];
 
-function Budget() {
-  const [people, setPeople] = useState<string[]>(defaultPeople);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("it-IT", {
+    style: "currency",
+    currency: "EUR",
+  }).format(value);
+}
 
-  const [description, setDescription] = useState("");
-  const [amount, setAmount] = useState("");
-  const [paidBy, setPaidBy] = useState(defaultPeople[0]);
+function Budget() {
+  const traveler = getTravelerProfile();
+
+  const [people, setPeople] =
+    useState<string[]>(defaultPeople);
+
+  const [expenses, setExpenses] =
+    useState<Expense[]>([]);
+
+  const [description, setDescription] =
+    useState("");
+
+  const [amount, setAmount] =
+    useState("");
+
+  const [paidBy, setPaidBy] =
+    useState(defaultPeople[0]);
+
   const [participants, setParticipants] =
     useState<string[]>(defaultPeople);
 
-  const [showExpenseForm, setShowExpenseForm] = useState(false);
-  const [showPeopleForm, setShowPeopleForm] = useState(false);
+  const [
+    showExpenseForm,
+    setShowExpenseForm,
+  ] = useState(false);
+
+  const [
+    showPeopleForm,
+    setShowPeopleForm,
+  ] = useState(false);
 
   useEffect(() => {
-    const savedPeople = localStorage.getItem(PEOPLE_STORAGE_KEY);
-    const savedExpenses = localStorage.getItem(
-      EXPENSES_STORAGE_KEY,
-    );
+    const savedPeople =
+      localStorage.getItem(
+        PEOPLE_STORAGE_KEY,
+      );
+
+    const savedExpenses =
+      localStorage.getItem(
+        EXPENSES_STORAGE_KEY,
+      );
 
     if (savedPeople) {
       try {
-        const parsedPeople = JSON.parse(savedPeople);
+        const parsedPeople =
+          JSON.parse(savedPeople);
 
         if (
           Array.isArray(parsedPeople) &&
@@ -59,15 +98,24 @@ function Budget() {
           setParticipants(parsedPeople);
         }
       } catch {
-        localStorage.removeItem(PEOPLE_STORAGE_KEY);
+        localStorage.removeItem(
+          PEOPLE_STORAGE_KEY,
+        );
       }
     }
 
     if (savedExpenses) {
       try {
-        setExpenses(JSON.parse(savedExpenses));
+        const parsedExpenses =
+          JSON.parse(savedExpenses);
+
+        if (Array.isArray(parsedExpenses)) {
+          setExpenses(parsedExpenses);
+        }
       } catch {
-        localStorage.removeItem(EXPENSES_STORAGE_KEY);
+        localStorage.removeItem(
+          EXPENSES_STORAGE_KEY,
+        );
       }
     }
   }, []);
@@ -89,21 +137,37 @@ function Budget() {
   const totalExpenses = useMemo(
     () =>
       expenses.reduce(
-        (total, expense) => total + expense.amount,
+        (total, expense) =>
+          total + expense.amount,
         0,
       ),
     [expenses],
   );
 
+  const averageExpense =
+    expenses.length > 0
+      ? totalExpenses / expenses.length
+      : 0;
+
+  const averagePerPerson =
+    people.length > 0
+      ? totalExpenses / people.length
+      : 0;
+
   const balances = useMemo(() => {
-    const result: Record<string, number> = {};
+    const result: Record<
+      string,
+      number
+    > = {};
 
     people.forEach((person) => {
       result[person] = 0;
     });
 
     expenses.forEach((expense) => {
-      if (expense.participants.length === 0) {
+      if (
+        expense.participants.length === 0
+      ) {
         return;
       }
 
@@ -112,15 +176,20 @@ function Budget() {
       }
 
       const individualShare =
-        expense.amount / expense.participants.length;
+        expense.amount /
+        expense.participants.length;
 
-      result[expense.paidBy] += expense.amount;
+      result[expense.paidBy] +=
+        expense.amount;
 
-      expense.participants.forEach((person) => {
-        if (person in result) {
-          result[person] -= individualShare;
-        }
-      });
+      expense.participants.forEach(
+        (person) => {
+          if (person in result) {
+            result[person] -=
+              individualShare;
+          }
+        },
+      );
     });
 
     return result;
@@ -131,20 +200,54 @@ function Budget() {
     [balances],
   );
 
-  function toggleParticipant(person: string) {
-    setParticipants((currentParticipants) => {
-      if (currentParticipants.includes(person)) {
-        return currentParticipants.filter(
-          (participant) => participant !== person,
-        );
-      }
+  const biggestExpense = useMemo(() => {
+    if (expenses.length === 0) {
+      return undefined;
+    }
 
-      return [...currentParticipants, person];
-    });
+    return [...expenses].sort(
+      (firstExpense, secondExpense) =>
+        secondExpense.amount -
+        firstExpense.amount,
+    )[0];
+  }, [expenses]);
+
+  function toggleParticipant(
+    person: string,
+  ) {
+    setParticipants(
+      (currentParticipants) => {
+        if (
+          currentParticipants.includes(
+            person,
+          )
+        ) {
+          return currentParticipants.filter(
+            (participant) =>
+              participant !== person,
+          );
+        }
+
+        return [
+          ...currentParticipants,
+          person,
+        ];
+      },
+    );
+  }
+
+  function selectAllParticipants() {
+    setParticipants(people);
+  }
+
+  function clearParticipants() {
+    setParticipants([]);
   }
 
   function addExpense() {
-    const numericAmount = Number(amount.replace(",", "."));
+    const numericAmount = Number(
+      amount.replace(",", "."),
+    );
 
     if (
       !description.trim() ||
@@ -155,22 +258,27 @@ function Budget() {
       alert(
         "Inserisci descrizione, importo e almeno un partecipante.",
       );
+
       return;
     }
 
     const newExpense: Expense = {
       id: crypto.randomUUID(),
-      description: description.trim(),
+      description:
+        description.trim(),
       amount: numericAmount,
       paidBy,
       participants,
-      createdAt: new Date().toISOString(),
+      createdAt:
+        new Date().toISOString(),
     };
 
-    setExpenses((currentExpenses) => [
-      newExpense,
-      ...currentExpenses,
-    ]);
+    setExpenses(
+      (currentExpenses) => [
+        newExpense,
+        ...currentExpenses,
+      ],
+    );
 
     setDescription("");
     setAmount("");
@@ -180,16 +288,21 @@ function Budget() {
   }
 
   function deleteExpense(id: string) {
-    const confirmed = window.confirm(
-      "Vuoi eliminare questa spesa?",
-    );
+    const confirmed =
+      window.confirm(
+        "Vuoi eliminare questa spesa?",
+      );
 
     if (!confirmed) {
       return;
     }
 
-    setExpenses((currentExpenses) =>
-      currentExpenses.filter((expense) => expense.id !== id),
+    setExpenses(
+      (currentExpenses) =>
+        currentExpenses.filter(
+          (expense) =>
+            expense.id !== id,
+        ),
     );
   }
 
@@ -198,9 +311,10 @@ function Budget() {
       return;
     }
 
-    const confirmed = window.confirm(
-      "Vuoi eliminare tutte le spese inserite?",
-    );
+    const confirmed =
+      window.confirm(
+        "Vuoi eliminare tutte le spese inserite?",
+      );
 
     if (!confirmed) {
       return;
@@ -209,24 +323,46 @@ function Budget() {
     setExpenses([]);
   }
 
-  function updatePerson(index: number, value: string) {
+  function updatePerson(
+    index: number,
+    value: string,
+  ) {
     setPeople((currentPeople) =>
-      currentPeople.map((person, personIndex) =>
-        personIndex === index ? value : person,
+      currentPeople.map(
+        (person, personIndex) =>
+          personIndex === index
+            ? value
+            : person,
       ),
     );
   }
 
   function savePeople() {
-    const cleanedPeople = people.map((person) => person.trim());
+    const cleanedPeople =
+      people.map((person) =>
+        person.trim(),
+      );
 
-    if (cleanedPeople.some((person) => !person)) {
-      alert("Inserisci tutti e cinque i nomi.");
+    if (
+      cleanedPeople.some(
+        (person) => !person,
+      )
+    ) {
+      alert(
+        "Inserisci tutti e cinque i nomi.",
+      );
+
       return;
     }
 
-    if (new Set(cleanedPeople).size !== cleanedPeople.length) {
-      alert("Ogni partecipante deve avere un nome diverso.");
+    if (
+      new Set(cleanedPeople).size !==
+      cleanedPeople.length
+    ) {
+      alert(
+        "Ogni partecipante deve avere un nome diverso.",
+      );
+
       return;
     }
 
@@ -236,18 +372,28 @@ function Budget() {
     setPaidBy(cleanedPeople[0]);
     setParticipants(cleanedPeople);
 
-    setExpenses((currentExpenses) =>
-      currentExpenses.map((expense) => ({
-        ...expense,
-        paidBy:
-          cleanedPeople[oldPeople.indexOf(expense.paidBy)] ??
-          expense.paidBy,
-        participants: expense.participants.map(
-          (participant) =>
-            cleanedPeople[oldPeople.indexOf(participant)] ??
-            participant,
+    setExpenses(
+      (currentExpenses) =>
+        currentExpenses.map(
+          (expense) => ({
+            ...expense,
+            paidBy:
+              cleanedPeople[
+                oldPeople.indexOf(
+                  expense.paidBy,
+                )
+              ] ?? expense.paidBy,
+            participants:
+              expense.participants.map(
+                (participant) =>
+                  cleanedPeople[
+                    oldPeople.indexOf(
+                      participant,
+                    )
+                  ] ?? participant,
+              ),
+          }),
         ),
-      })),
     );
 
     setShowPeopleForm(false);
@@ -258,160 +404,398 @@ function Budget() {
       style={{
         minHeight: "100vh",
         boxSizing: "border-box",
-        padding: "28px 20px 112px",
-        background: `linear-gradient(180deg, ${theme.colors.background}, ${theme.colors.backgroundGradient})`,
+        padding:
+          "calc(23px + env(safe-area-inset-top)) 18px 116px",
+        background: `
+          radial-gradient(
+            circle at 92% 4%,
+            rgba(244,213,141,0.12),
+            transparent 27%
+          ),
+          radial-gradient(
+            circle at 5% 42%,
+            rgba(17,197,191,0.09),
+            transparent 26%
+          ),
+          linear-gradient(
+            180deg,
+            ${theme.colors.background},
+            ${theme.colors.backgroundGradient}
+          )
+        `,
         color: theme.colors.text,
         fontFamily:
           "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       }}
     >
-      <p
-        style={{
-          margin: 0,
-          color: theme.colors.primary,
-          fontSize: 13,
-          fontWeight: 850,
-          letterSpacing: 1.2,
-          textTransform: "uppercase",
-        }}
-      >
-        Spese condivise
-      </p>
+      <header>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent:
+              "space-between",
+            gap: 16,
+          }}
+        >
+          <div>
+            <p
+              style={{
+                margin: 0,
+                color:
+                  theme.colors.primary,
+                fontSize: 11,
+                fontWeight: 900,
+                letterSpacing: 1.6,
+                textTransform:
+                  "uppercase",
+              }}
+            >
+              Spese condivise
+            </p>
 
-      <h1 style={{ margin: "8px 0 6px", fontSize: 34 }}>
-        Budget
-      </h1>
+            <h1
+              style={{
+                margin: "7px 0 0",
+                fontSize: 34,
+                lineHeight: 1,
+                letterSpacing: -1,
+              }}
+            >
+              Budget
+            </h1>
 
-      <p
-        style={{
-          marginTop: 0,
-          color: theme.colors.textSoft,
-        }}
-      >
-        Registra chi paga e calcola automaticamente i rimborsi.
-      </p>
+            <p
+              style={{
+                margin: "9px 0 0",
+                maxWidth: 280,
+                color:
+                  theme.colors.textSoft,
+                fontSize: 13,
+                lineHeight: 1.5,
+              }}
+            >
+              {traveler
+                ? `Conti e rimborsi del gruppo di ${traveler}.`
+                : "Conti e rimborsi del gruppo."}
+            </p>
+          </div>
+
+          <div
+            style={{
+              width: 55,
+              height: 55,
+              display: "grid",
+              placeItems: "center",
+              flexShrink: 0,
+              borderRadius: 18,
+              background:
+                "linear-gradient(135deg, rgba(244,213,141,0.22), rgba(17,197,191,0.17))",
+              border:
+                "1px solid rgba(255,255,255,0.11)",
+              boxShadow:
+                "0 14px 32px rgba(0,0,0,0.22)",
+              fontSize: 25,
+            }}
+          >
+            💰
+          </div>
+        </div>
+      </header>
 
       <section
         style={{
-          marginTop: 25,
-          padding: 22,
-          borderRadius: 26,
+          position: "relative",
+          overflow: "hidden",
+          marginTop: 24,
+          padding: 23,
+          borderRadius: 28,
           background:
-            "linear-gradient(135deg, rgba(17,197,191,0.96), rgba(14,79,111,0.94))",
-          boxShadow: "0 18px 40px rgba(0,0,0,0.24)",
+            "linear-gradient(140deg, rgba(17,197,191,0.98), rgba(14,102,126,0.97) 50%, rgba(8,48,78,0.98))",
+          border:
+            "1px solid rgba(255,255,255,0.13)",
+          boxShadow:
+            "0 24px 52px rgba(0,0,0,0.28)",
         }}
       >
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            top: -55,
+            right: -45,
+            width: 170,
+            height: 170,
+            borderRadius: "50%",
+            background:
+              "rgba(255,255,255,0.10)",
+          }}
+        />
+
         <p
           style={{
+            position: "relative",
             margin: 0,
-            fontSize: 14,
-            opacity: 0.85,
+            color:
+              "rgba(255,255,255,0.76)",
+            fontSize: 11,
+            fontWeight: 850,
+            letterSpacing: 0.9,
+            textTransform: "uppercase",
           }}
         >
-          Totale spese inserite
+          Totale del viaggio
         </p>
 
         <strong
           style={{
+            position: "relative",
             display: "block",
-            marginTop: 7,
-            fontSize: 40,
+            marginTop: 10,
+            fontSize: 43,
+            lineHeight: 1,
+            letterSpacing: -1.5,
           }}
         >
-          € {totalExpenses.toFixed(2)}
+          {formatCurrency(totalExpenses)}
         </strong>
 
         <p
           style={{
-            margin: "8px 0 0",
-            fontSize: 13,
-            opacity: 0.84,
+            position: "relative",
+            margin: "9px 0 0",
+            color:
+              "rgba(255,255,255,0.70)",
+            fontSize: 12,
           }}
         >
           {expenses.length}{" "}
-          {expenses.length === 1 ? "spesa" : "spese"}
+          {expenses.length === 1
+            ? "spesa registrata"
+            : "spese registrate"}
         </p>
+
+        <div
+          style={{
+            position: "relative",
+            display: "grid",
+            gridTemplateColumns:
+              "1fr 1fr",
+            gap: 8,
+            marginTop: 20,
+          }}
+        >
+          <HeroInfo
+            label="Media a persona"
+            value={formatCurrency(
+              averagePerPerson,
+            )}
+          />
+
+          <HeroInfo
+            label="Media per spesa"
+            value={formatCurrency(
+              averageExpense,
+            )}
+          />
+        </div>
       </section>
 
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 10,
-          marginTop: 17,
+          gridTemplateColumns:
+            "1fr 1fr",
+          gap: 9,
+          marginTop: 15,
         }}
       >
         <button
           type="button"
-          onClick={() =>
-            setShowExpenseForm(!showExpenseForm)
-          }
-          style={primaryButtonStyle}
+          onClick={() => {
+            setShowExpenseForm(
+              (currentValue) =>
+                !currentValue,
+            );
+
+            setShowPeopleForm(false);
+          }}
+          style={{
+            ...actionButtonStyle,
+            background:
+              showExpenseForm
+                ? "rgba(255,255,255,0.07)"
+                : theme.colors.primary,
+            color:
+              showExpenseForm
+                ? theme.colors.text
+                : theme.colors.background,
+            border: showExpenseForm
+              ? "1px solid rgba(255,255,255,0.10)"
+              : "1px solid transparent",
+          }}
         >
-          {showExpenseForm ? "Chiudi" : "+ Nuova spesa"}
+          {showExpenseForm
+            ? "× Chiudi"
+            : "+ Nuova spesa"}
         </button>
 
         <button
           type="button"
-          onClick={() => setShowPeopleForm(!showPeopleForm)}
-          style={secondaryButtonStyle}
+          onClick={() => {
+            setShowPeopleForm(
+              (currentValue) =>
+                !currentValue,
+            );
+
+            setShowExpenseForm(false);
+          }}
+          style={{
+            ...actionButtonStyle,
+            background:
+              showPeopleForm
+                ? "rgba(17,197,191,0.12)"
+                : "rgba(255,255,255,0.06)",
+            color:
+              showPeopleForm
+                ? theme.colors.primary
+                : theme.colors.text,
+            border:
+              showPeopleForm
+                ? "1px solid rgba(17,197,191,0.24)"
+                : "1px solid rgba(255,255,255,0.09)",
+          }}
         >
           👥 Partecipanti
         </button>
       </div>
 
       {showPeopleForm && (
-        <section style={formSectionStyle}>
-          <h2 style={{ margin: 0, fontSize: 20 }}>
-            Nomi del gruppo
-          </h2>
+        <section
+          style={{
+            ...formSectionStyle,
+            border:
+              "1px solid rgba(110,212,255,0.17)",
+          }}
+        >
+          <SectionHeading
+            eyebrow="Gruppo"
+            title="Partecipanti"
+          />
 
           <p
             style={{
-              margin: "7px 0 0",
-              color: theme.colors.textSoft,
-              fontSize: 13,
+              margin: "8px 0 0",
+              color:
+                theme.colors.textSoft,
+              fontSize: 12,
+              lineHeight: 1.5,
             }}
           >
-            Le modifiche verranno applicate anche alle spese già
+            Le modifiche verranno
+            applicate anche alle spese già
             registrate.
           </p>
 
-          {people.map((person, index) => (
-            <label key={index} style={labelStyle}>
-              Partecipante {index + 1}
-              <input
-                value={person}
-                onChange={(event) =>
-                  updatePerson(index, event.target.value)
-                }
-                style={inputStyle}
-              />
-            </label>
-          ))}
+          <div
+            style={{
+              display: "grid",
+              gap: 10,
+              marginTop: 17,
+            }}
+          >
+            {people.map(
+              (person, index) => (
+                <label
+                  key={index}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "37px 1fr",
+                    alignItems: "center",
+                    gap: 11,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 37,
+                      height: 37,
+                      display: "grid",
+                      placeItems:
+                        "center",
+                      borderRadius: 12,
+                      background:
+                        "rgba(110,212,255,0.12)",
+                      color: "#6ED4FF",
+                      fontSize: 12,
+                      fontWeight: 900,
+                    }}
+                  >
+                    {index + 1}
+                  </span>
+
+                  <input
+                    value={person}
+                    onChange={(event) =>
+                      updatePerson(
+                        index,
+                        event.target.value,
+                      )
+                    }
+                    aria-label={`Partecipante ${
+                      index + 1
+                    }`}
+                    style={inputStyle}
+                  />
+                </label>
+              ),
+            )}
+          </div>
 
           <button
             type="button"
             onClick={savePeople}
             style={{
-              ...primaryButtonStyle,
               width: "100%",
-              marginTop: 20,
+              marginTop: 18,
+              padding: 13,
+              border: 0,
+              borderRadius: 15,
+              background:
+                theme.colors.primary,
+              color:
+                theme.colors.background,
+              fontWeight: 900,
+              cursor: "pointer",
             }}
           >
-            Salva nomi
+            Salva partecipanti
           </button>
         </section>
       )}
 
       {showExpenseForm && (
-        <section style={formSectionStyle}>
+        <section
+          style={{
+            ...formSectionStyle,
+            border:
+              "1px solid rgba(244,213,141,0.17)",
+          }}
+        >
+          <SectionHeading
+            eyebrow="Nuovo pagamento"
+            title="Aggiungi una spesa"
+          />
+
           <label style={labelStyle}>
             Descrizione
+
             <input
               value={description}
               onChange={(event) =>
-                setDescription(event.target.value)
+                setDescription(
+                  event.target.value,
+                )
               }
               placeholder="Es. Cena a Holbox"
               style={inputStyle}
@@ -419,78 +803,200 @@ function Budget() {
           </label>
 
           <label style={labelStyle}>
-            Importo in euro
-            <input
-              value={amount}
-              onChange={(event) =>
-                setAmount(event.target.value)
-              }
-              inputMode="decimal"
-              placeholder="Es. 120"
-              style={inputStyle}
-            />
+            Importo
+
+            <div
+              style={{
+                position: "relative",
+              }}
+            >
+              <span
+                style={{
+                  position:
+                    "absolute",
+                  top: "50%",
+                  left: 14,
+                  zIndex: 1,
+                  transform:
+                    "translateY(-50%)",
+                  color:
+                    theme.colors.secondary,
+                  fontSize: 17,
+                  fontWeight: 900,
+                }}
+              >
+                €
+              </span>
+
+              <input
+                value={amount}
+                onChange={(event) =>
+                  setAmount(
+                    event.target.value,
+                  )
+                }
+                inputMode="decimal"
+                placeholder="120,00"
+                style={{
+                  ...inputStyle,
+                  paddingLeft: 38,
+                }}
+              />
+            </div>
           </label>
 
           <label style={labelStyle}>
             Pagata da
+
             <select
               value={paidBy}
               onChange={(event) =>
-                setPaidBy(event.target.value)
+                setPaidBy(
+                  event.target.value,
+                )
               }
               style={inputStyle}
             >
               {people.map((person) => (
-                <option key={person} value={person}>
+                <option
+                  key={person}
+                  value={person}
+                >
                   {person}
                 </option>
               ))}
             </select>
           </label>
 
-          <div style={{ marginTop: 18 }}>
-            <p
+          <div
+            style={{
+              marginTop: 18,
+            }}
+          >
+            <div
               style={{
-                margin: "0 0 10px",
-                fontWeight: 750,
+                display: "flex",
+                alignItems: "center",
+                justifyContent:
+                  "space-between",
+                gap: 12,
               }}
             >
-              Dividi tra
-            </p>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 13,
+                  fontWeight: 850,
+                }}
+              >
+                Dividi tra
+              </p>
 
-            <div style={{ display: "grid", gap: 9 }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 7,
+                }}
+              >
+                <SmallTextButton
+                  label="Tutti"
+                  onClick={
+                    selectAllParticipants
+                  }
+                />
+
+                <SmallTextButton
+                  label="Nessuno"
+                  onClick={
+                    clearParticipants
+                  }
+                />
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gap: 8,
+                marginTop: 11,
+              }}
+            >
               {people.map((person) => {
                 const isSelected =
-                  participants.includes(person);
+                  participants.includes(
+                    person,
+                  );
 
                 return (
-                  <label
+                  <button
                     key={person}
+                    type="button"
+                    onClick={() =>
+                      toggleParticipant(
+                        person,
+                      )
+                    }
                     style={{
+                      width: "100%",
                       display: "flex",
-                      alignItems: "center",
+                      alignItems:
+                        "center",
                       gap: 11,
                       padding: 12,
-                      borderRadius: 14,
-                      background: isSelected
-                        ? "rgba(17,197,191,0.15)"
-                        : "rgba(255,255,255,0.06)",
-                      border: isSelected
-                        ? "1px solid rgba(17,197,191,0.28)"
-                        : "1px solid transparent",
+                      border:
+                        isSelected
+                          ? "1px solid rgba(17,197,191,0.27)"
+                          : "1px solid rgba(255,255,255,0.07)",
+                      borderRadius: 15,
+                      background:
+                        isSelected
+                          ? "rgba(17,197,191,0.11)"
+                          : "rgba(255,255,255,0.045)",
+                      color:
+                        theme.colors.text,
+                      textAlign: "left",
                       cursor: "pointer",
                     }}
                   >
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() =>
-                        toggleParticipant(person)
-                      }
-                    />
+                    <span
+                      style={{
+                        width: 28,
+                        height: 28,
+                        display: "grid",
+                        placeItems:
+                          "center",
+                        flexShrink: 0,
+                        borderRadius: 9,
+                        background:
+                          isSelected
+                            ? theme.colors
+                                .primary
+                            : "rgba(255,255,255,0.055)",
+                        color:
+                          isSelected
+                            ? theme.colors
+                                .background
+                            : theme.colors
+                                .textSoft,
+                        fontSize: 12,
+                        fontWeight: 950,
+                      }}
+                    >
+                      {isSelected
+                        ? "✓"
+                        : ""}
+                    </span>
 
-                    {person}
-                  </label>
+                    <span
+                      style={{
+                        flex: 1,
+                        fontSize: 14,
+                        fontWeight: 750,
+                      }}
+                    >
+                      {person}
+                    </span>
+                  </button>
                 );
               })}
             </div>
@@ -501,13 +1007,15 @@ function Budget() {
             onClick={addExpense}
             style={{
               width: "100%",
-              marginTop: 20,
+              marginTop: 19,
               padding: 14,
               border: 0,
               borderRadius: 16,
-              background: theme.colors.secondary,
-              color: theme.colors.background,
-              fontWeight: 850,
+              background:
+                theme.colors.secondary,
+              color:
+                theme.colors.background,
+              fontWeight: 900,
               cursor: "pointer",
             }}
           >
@@ -516,177 +1024,361 @@ function Budget() {
         </section>
       )}
 
-      <section style={{ marginTop: 28 }}>
-        <h2 style={{ margin: "0 0 14px", fontSize: 22 }}>
-          Chi deve pagare chi
-        </h2>
+      <section
+        style={{
+          marginTop: 27,
+        }}
+      >
+        <SectionHeading
+          eyebrow="Rimborsi"
+          title="Chi deve pagare chi"
+          count={settlements.length}
+        />
 
-        {expenses.length === 0 ? (
-          <EmptyCard text="Inserisci una spesa per calcolare i rimborsi." />
-        ) : settlements.length === 0 ? (
-          <div
-            style={{
-              padding: 20,
-              borderRadius: 21,
-              background: "rgba(17,197,191,0.14)",
-              border: "1px solid rgba(17,197,191,0.25)",
-              color: theme.colors.primary,
-              textAlign: "center",
-              fontWeight: 800,
-            }}
-          >
-            ✓ Tutti i conti sono già in pari.
-          </div>
-        ) : (
-          <div style={{ display: "grid", gap: 11 }}>
-            {settlements.map((settlement, index) => (
-              <article
-                key={`${settlement.from}-${settlement.to}-${index}`}
-                style={{
-                  padding: 17,
-                  borderRadius: 20,
-                  background: theme.colors.card,
-                  border: "1px solid rgba(244,213,141,0.22)",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                  }}
-                >
-                  <span
+        <div
+          style={{
+            marginTop: 14,
+          }}
+        >
+          {expenses.length === 0 ? (
+            <EmptyCard
+              icon="💸"
+              title="Nessun rimborso"
+              text="Inserisci una spesa per calcolare automaticamente i conti."
+            />
+          ) : settlements.length === 0 ? (
+            <div
+              style={{
+                padding: 20,
+                borderRadius: 22,
+                background:
+                  "rgba(17,197,191,0.11)",
+                border:
+                  "1px solid rgba(17,197,191,0.23)",
+                color:
+                  theme.colors.primary,
+                textAlign: "center",
+                fontWeight: 850,
+              }}
+            >
+              ✓ Tutti i conti sono già in
+              pari.
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gap: 10,
+              }}
+            >
+              {settlements.map(
+                (settlement, index) => (
+                  <article
+                    key={`${settlement.from}-${settlement.to}-${index}`}
                     style={{
-                      width: 43,
-                      height: 43,
-                      display: "grid",
-                      placeItems: "center",
-                      flexShrink: 0,
-                      borderRadius: 14,
-                      background: "rgba(244,213,141,0.15)",
-                      fontSize: 20,
+                      padding: 16,
+                      borderRadius: 21,
+                      background:
+                        "rgba(255,255,255,0.06)",
+                      border:
+                        "1px solid rgba(244,213,141,0.18)",
+                      boxShadow:
+                        "0 9px 24px rgba(0,0,0,0.10)",
                     }}
                   >
-                    💸
-                  </span>
-
-                  <div style={{ flex: 1 }}>
-                    <strong>
-                      {settlement.from}
-                    </strong>
-
-                    <span
+                    <div
                       style={{
-                        display: "block",
-                        marginTop: 4,
-                        color: theme.colors.textSoft,
-                        fontSize: 13,
+                        display: "grid",
+                        gridTemplateColumns:
+                          "45px 1fr auto",
+                        alignItems:
+                          "center",
+                        gap: 12,
                       }}
                     >
-                      deve pagare {settlement.to}
-                    </span>
-                  </div>
+                      <span
+                        style={{
+                          width: 45,
+                          height: 45,
+                          display: "grid",
+                          placeItems:
+                            "center",
+                          borderRadius: 15,
+                          background:
+                            "rgba(244,213,141,0.13)",
+                          fontSize: 21,
+                        }}
+                      >
+                        💸
+                      </span>
 
-                  <strong
-                    style={{
-                      color: theme.colors.secondary,
-                      fontSize: 18,
-                    }}
-                  >
-                    € {settlement.amount.toFixed(2)}
-                  </strong>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
+                      <div>
+                        <strong
+                          style={{
+                            fontSize: 15,
+                          }}
+                        >
+                          {
+                            settlement.from
+                          }
+                        </strong>
+
+                        <span
+                          style={{
+                            display: "block",
+                            marginTop: 4,
+                            color:
+                              theme.colors
+                                .textSoft,
+                            fontSize: 11,
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          paga{" "}
+                          {settlement.to}
+                        </span>
+                      </div>
+
+                      <strong
+                        style={{
+                          color:
+                            theme.colors
+                              .secondary,
+                          fontSize: 17,
+                        }}
+                      >
+                        {formatCurrency(
+                          settlement.amount,
+                        )}
+                      </strong>
+                    </div>
+                  </article>
+                ),
+              )}
+            </div>
+          )}
+        </div>
       </section>
 
-      <section style={{ marginTop: 28 }}>
-        <h2 style={{ margin: "0 0 14px", fontSize: 22 }}>
-          Saldi del gruppo
-        </h2>
+      <section
+        style={{
+          marginTop: 28,
+        }}
+      >
+        <SectionHeading
+          eyebrow="Gruppo"
+          title="Saldi personali"
+          count={people.length}
+        />
 
-        <div style={{ display: "grid", gap: 10 }}>
-          {people.map((person) => {
-            const balance = balances[person] ?? 0;
+        <div
+          style={{
+            display: "grid",
+            gap: 9,
+            marginTop: 14,
+          }}
+        >
+          {people.map((person, index) => {
+            const balance =
+              balances[person] ?? 0;
+
+            const isPositive =
+              balance > 0.005;
+
+            const isNegative =
+              balance < -0.005;
+
+            const balanceColor =
+              isPositive
+                ? theme.colors.primary
+                : isNegative
+                  ? "#FF9D9D"
+                  : theme.colors.textSoft;
 
             return (
               <article
                 key={person}
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
+                  display: "grid",
+                  gridTemplateColumns:
+                    "43px 1fr auto",
                   alignItems: "center",
-                  gap: 14,
-                  padding: 16,
-                  borderRadius: 18,
-                  background: theme.colors.card,
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  gap: 12,
+                  padding: 14,
+                  borderRadius: 19,
+                  background:
+                    "rgba(255,255,255,0.055)",
+                  border:
+                    "1px solid rgba(255,255,255,0.075)",
                 }}
               >
-                <span style={{ fontWeight: 750 }}>
-                  {person}
-                </span>
-
                 <span
                   style={{
-                    fontWeight: 850,
-                    color:
-                      balance > 0.005
-                        ? theme.colors.primary
-                        : balance < -0.005
-                          ? "#FFB4A8"
-                          : theme.colors.textSoft,
+                    width: 43,
+                    height: 43,
+                    display: "grid",
+                    placeItems: "center",
+                    borderRadius: 14,
+                    background:
+                      `${balanceColor}14`,
+                    color: balanceColor,
+                    fontSize: 14,
+                    fontWeight: 950,
                   }}
                 >
-                  {balance > 0.005 ? "+" : ""}
-                  {balance.toFixed(2)} €
+                  {index + 1}
                 </span>
+
+                <div>
+                  <strong
+                    style={{
+                      fontSize: 14,
+                    }}
+                  >
+                    {person}
+                  </strong>
+
+                  <span
+                    style={{
+                      display: "block",
+                      marginTop: 4,
+                      color:
+                        theme.colors.textSoft,
+                      fontSize: 10,
+                    }}
+                  >
+                    {isPositive
+                      ? "Deve ricevere"
+                      : isNegative
+                        ? "Deve pagare"
+                        : "In pari"}
+                  </span>
+                </div>
+
+                <strong
+                  style={{
+                    color: balanceColor,
+                    fontSize: 15,
+                  }}
+                >
+                  {isPositive ? "+" : ""}
+                  {formatCurrency(balance)}
+                </strong>
               </article>
             );
           })}
         </div>
-
-        <p
-          style={{
-            margin: "12px 3px 0",
-            color: theme.colors.textSoft,
-            fontSize: 12,
-            lineHeight: 1.5,
-          }}
-        >
-          Un saldo positivo indica che la persona deve ricevere
-          denaro; un saldo negativo indica che deve pagare.
-        </p>
       </section>
 
-      <section style={{ marginTop: 28 }}>
+      {biggestExpense && (
+        <section
+          style={{
+            marginTop: 25,
+            padding: 18,
+            borderRadius: 22,
+            background:
+              "linear-gradient(135deg, rgba(195,168,255,0.10), rgba(255,255,255,0.045))",
+            border:
+              "1px solid rgba(195,168,255,0.17)",
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              color: "#C3A8FF",
+              fontSize: 10,
+              fontWeight: 900,
+              letterSpacing: 0.9,
+              textTransform: "uppercase",
+            }}
+          >
+            Spesa più alta
+          </p>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-end",
+              justifyContent:
+                "space-between",
+              gap: 14,
+              marginTop: 9,
+            }}
+          >
+            <div>
+              <strong
+                style={{
+                  display: "block",
+                  fontSize: 17,
+                }}
+              >
+                {
+                  biggestExpense.description
+                }
+              </strong>
+
+              <span
+                style={{
+                  display: "block",
+                  marginTop: 5,
+                  color:
+                    theme.colors.textSoft,
+                  fontSize: 11,
+                }}
+              >
+                Pagata da{" "}
+                {biggestExpense.paidBy}
+              </span>
+            </div>
+
+            <strong
+              style={{
+                color: "#C3A8FF",
+                fontSize: 18,
+              }}
+            >
+              {formatCurrency(
+                biggestExpense.amount,
+              )}
+            </strong>
+          </div>
+        </section>
+      )}
+
+      <section
+        style={{
+          marginTop: 28,
+        }}
+      >
         <div
           style={{
             display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
+            alignItems: "flex-end",
+            justifyContent:
+              "space-between",
             gap: 14,
-            marginBottom: 14,
           }}
         >
-          <h2 style={{ margin: 0, fontSize: 22 }}>
-            Spese inserite
-          </h2>
+          <SectionHeading
+            eyebrow="Cronologia"
+            title="Spese inserite"
+            count={expenses.length}
+          />
 
           {expenses.length > 0 && (
             <button
               type="button"
               onClick={resetExpenses}
               style={{
-                padding: "8px 11px",
-                border: "1px solid rgba(255,180,168,0.28)",
+                padding: "7px 9px",
+                border:
+                  "1px solid rgba(255,142,142,0.20)",
                 borderRadius: 12,
-                background: "transparent",
+                background:
+                  "rgba(255,142,142,0.055)",
                 color: "#FFB4A8",
-                fontWeight: 700,
+                fontSize: 10,
+                fontWeight: 800,
                 cursor: "pointer",
               }}
             >
@@ -695,82 +1387,169 @@ function Budget() {
           )}
         </div>
 
-        {expenses.length === 0 ? (
-          <EmptyCard text="Non hai ancora inserito nessuna spesa." />
-        ) : (
-          <div style={{ display: "grid", gap: 12 }}>
-            {expenses.map((expense) => (
-              <article
-                key={expense.id}
-                style={{
-                  padding: 18,
-                  borderRadius: 20,
-                  background: theme.colors.card,
-                  border: "1px solid rgba(255,255,255,0.08)",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 16,
-                  }}
-                >
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ margin: 0 }}>
-                      {expense.description}
-                    </h3>
-
-                    <p
+        <div
+          style={{
+            marginTop: 14,
+          }}
+        >
+          {expenses.length === 0 ? (
+            <EmptyCard
+              icon="🧾"
+              title="Nessuna spesa"
+              text="Le spese registrate durante il viaggio appariranno qui."
+            />
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gap: 10,
+              }}
+            >
+              {expenses.map(
+                (expense) => (
+                  <article
+                    key={expense.id}
+                    style={{
+                      padding: 16,
+                      borderRadius: 21,
+                      background:
+                        "rgba(255,255,255,0.06)",
+                      border:
+                        "1px solid rgba(255,255,255,0.075)",
+                      boxShadow:
+                        "0 9px 24px rgba(0,0,0,0.09)",
+                    }}
+                  >
+                    <div
                       style={{
-                        margin: "7px 0 0",
-                        color: theme.colors.textSoft,
-                        fontSize: 14,
+                        display: "flex",
+                        alignItems:
+                          "flex-start",
+                        gap: 13,
                       }}
                     >
-                      Pagata da {expense.paidBy}
-                    </p>
+                      <span
+                        style={{
+                          width: 44,
+                          height: 44,
+                          display: "grid",
+                          placeItems:
+                            "center",
+                          flexShrink: 0,
+                          borderRadius: 14,
+                          background:
+                            "rgba(17,197,191,0.12)",
+                          fontSize: 20,
+                        }}
+                      >
+                        🧾
+                      </span>
 
-                    <p
-                      style={{
-                        margin: "5px 0 0",
-                        color: theme.colors.textSoft,
-                        fontSize: 13,
-                        lineHeight: 1.45,
-                      }}
-                    >
-                      Divisa tra:{" "}
-                      {expense.participants.join(", ")}
-                    </p>
-                  </div>
+                      <div
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                        }}
+                      >
+                        <strong
+                          style={{
+                            display: "block",
+                            fontSize: 15,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {
+                            expense.description
+                          }
+                        </strong>
 
-                  <div style={{ textAlign: "right" }}>
-                    <strong style={{ fontSize: 18 }}>
-                      € {expense.amount.toFixed(2)}
-                    </strong>
+                        <span
+                          style={{
+                            display: "block",
+                            marginTop: 5,
+                            color:
+                              theme.colors
+                                .textSoft,
+                            fontSize: 11,
+                          }}
+                        >
+                          Pagata da{" "}
+                          {expense.paidBy}
+                        </span>
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        deleteExpense(expense.id)
-                      }
-                      style={{
-                        display: "block",
-                        margin: "11px 0 0 auto",
-                        border: 0,
-                        background: "transparent",
-                        color: "#FFB4A8",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Elimina
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
+                        <span
+                          style={{
+                            display: "block",
+                            marginTop: 5,
+                            color:
+                              theme.colors
+                                .textSoft,
+                            fontSize: 10,
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          {
+                            expense
+                              .participants
+                              .length
+                          }{" "}
+                          partecipanti ·{" "}
+                          {new Date(
+                            expense.createdAt,
+                          ).toLocaleDateString(
+                            "it-IT",
+                          )}
+                        </span>
+                      </div>
+
+                      <div
+                        style={{
+                          flexShrink: 0,
+                          textAlign: "right",
+                        }}
+                      >
+                        <strong
+                          style={{
+                            fontSize: 16,
+                          }}
+                        >
+                          {formatCurrency(
+                            expense.amount,
+                          )}
+                        </strong>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            deleteExpense(
+                              expense.id,
+                            )
+                          }
+                          style={{
+                            display: "block",
+                            margin:
+                              "10px 0 0 auto",
+                            padding: 0,
+                            border: 0,
+                            background:
+                              "transparent",
+                            color:
+                              "#FFB4A8",
+                            fontSize: 10,
+                            fontWeight: 800,
+                            cursor: "pointer",
+                          }}
+                        >
+                          Elimina
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ),
+              )}
+            </div>
+          )}
+        </div>
       </section>
     </main>
   );
@@ -779,23 +1558,42 @@ function Budget() {
 function calculateSettlements(
   balances: Record<string, number>,
 ): Settlement[] {
-  const creditors = Object.entries(balances)
-    .filter(([, balance]) => balance > 0.005)
+  const creditors = Object.entries(
+    balances,
+  )
+    .filter(
+      ([, balance]) =>
+        balance > 0.005,
+    )
     .map(([person, balance]) => ({
       person,
       amount: balance,
     }))
-    .sort((a, b) => b.amount - a.amount);
+    .sort(
+      (firstCreditor, secondCreditor) =>
+        secondCreditor.amount -
+        firstCreditor.amount,
+    );
 
-  const debtors = Object.entries(balances)
-    .filter(([, balance]) => balance < -0.005)
+  const debtors = Object.entries(
+    balances,
+  )
+    .filter(
+      ([, balance]) =>
+        balance < -0.005,
+    )
     .map(([person, balance]) => ({
       person,
       amount: Math.abs(balance),
     }))
-    .sort((a, b) => b.amount - a.amount);
+    .sort(
+      (firstDebtor, secondDebtor) =>
+        secondDebtor.amount -
+        firstDebtor.amount,
+    );
 
-  const settlements: Settlement[] = [];
+  const settlements: Settlement[] =
+    [];
 
   let creditorIndex = 0;
   let debtorIndex = 0;
@@ -804,8 +1602,11 @@ function calculateSettlements(
     creditorIndex < creditors.length &&
     debtorIndex < debtors.length
   ) {
-    const creditor = creditors[creditorIndex];
-    const debtor = debtors[debtorIndex];
+    const creditor =
+      creditors[creditorIndex];
+
+    const debtor =
+      debtors[debtorIndex];
 
     const amount = Math.min(
       creditor.amount,
@@ -816,14 +1617,18 @@ function calculateSettlements(
       settlements.push({
         from: debtor.person,
         to: creditor.person,
-        amount: Math.round(amount * 100) / 100,
+        amount:
+          Math.round(amount * 100) /
+          100,
       });
     }
 
     creditor.amount -= amount;
     debtor.amount -= amount;
 
-    if (creditor.amount <= 0.005) {
+    if (
+      creditor.amount <= 0.005
+    ) {
       creditorIndex += 1;
     }
 
@@ -835,34 +1640,220 @@ function calculateSettlements(
   return settlements;
 }
 
-function EmptyCard({ text }: { text: string }) {
+function HeroInfo({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
   return (
     <div
       style={{
-        padding: 20,
-        borderRadius: 20,
-        background: theme.colors.card,
-        color: theme.colors.textSoft,
-        lineHeight: 1.5,
+        padding: 12,
+        borderRadius: 15,
+        background:
+          "rgba(7,26,46,0.23)",
       }}
     >
-      {text}
+      <span
+        style={{
+          display: "block",
+          color:
+            "rgba(255,255,255,0.60)",
+          fontSize: 9,
+          fontWeight: 750,
+          textTransform: "uppercase",
+        }}
+      >
+        {label}
+      </span>
+
+      <strong
+        style={{
+          display: "block",
+          marginTop: 6,
+          fontSize: 13,
+        }}
+      >
+        {value}
+      </strong>
     </div>
   );
 }
 
+function SectionHeading({
+  eyebrow,
+  title,
+  count,
+}: {
+  eyebrow: string;
+  title: string;
+  count?: number;
+}) {
+  return (
+    <div>
+      <p
+        style={{
+          margin: 0,
+          color: theme.colors.primary,
+          fontSize: 10,
+          fontWeight: 900,
+          letterSpacing: 1.1,
+          textTransform: "uppercase",
+        }}
+      >
+        {eyebrow}
+      </p>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 9,
+          marginTop: 5,
+        }}
+      >
+        <h2
+          style={{
+            margin: 0,
+            fontSize: 22,
+            lineHeight: 1.2,
+            letterSpacing: -0.3,
+          }}
+        >
+          {title}
+        </h2>
+
+        {typeof count === "number" && (
+          <span
+            style={{
+              padding: "5px 7px",
+              borderRadius: 999,
+              background:
+                "rgba(17,197,191,0.12)",
+              color:
+                theme.colors.primary,
+              fontSize: 9,
+              fontWeight: 900,
+            }}
+          >
+            {count}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SmallTextButton({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        padding: "6px 8px",
+        border:
+          "1px solid rgba(255,255,255,0.09)",
+        borderRadius: 10,
+        background:
+          "rgba(255,255,255,0.045)",
+        color:
+          theme.colors.textSoft,
+        fontSize: 9,
+        fontWeight: 800,
+        cursor: "pointer",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function EmptyCard({
+  icon,
+  title,
+  text,
+}: {
+  icon: string;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div
+      style={{
+        padding: 24,
+        borderRadius: 22,
+        background:
+          "rgba(255,255,255,0.055)",
+        border:
+          "1px solid rgba(255,255,255,0.075)",
+        textAlign: "center",
+      }}
+    >
+      <span
+        style={{
+          fontSize: 34,
+        }}
+      >
+        {icon}
+      </span>
+
+      <h3
+        style={{
+          margin: "12px 0 0",
+          fontSize: 18,
+        }}
+      >
+        {title}
+      </h3>
+
+      <p
+        style={{
+          margin: "7px 0 0",
+          color:
+            theme.colors.textSoft,
+          fontSize: 12,
+          lineHeight: 1.5,
+        }}
+      >
+        {text}
+      </p>
+    </div>
+  );
+}
+
+const actionButtonStyle = {
+  minHeight: 49,
+  padding: "12px 10px",
+  borderRadius: 16,
+  fontSize: 13,
+  fontWeight: 900,
+  cursor: "pointer",
+};
+
 const formSectionStyle = {
   marginTop: 16,
-  padding: 20,
-  borderRadius: 24,
-  background: theme.colors.card,
-  border: "1px solid rgba(255,255,255,0.10)",
+  padding: 19,
+  borderRadius: 23,
+  background:
+    "rgba(255,255,255,0.06)",
+  boxShadow:
+    "0 14px 34px rgba(0,0,0,0.14)",
 };
 
 const labelStyle = {
   display: "block",
   marginTop: 16,
-  fontWeight: 750,
+  color: theme.colors.textSoft,
+  fontSize: 12,
+  fontWeight: 800,
 };
 
 const inputStyle = {
@@ -870,34 +1861,14 @@ const inputStyle = {
   boxSizing: "border-box" as const,
   marginTop: 8,
   padding: "13px 14px",
-  border: "1px solid rgba(255,255,255,0.14)",
+  border:
+    "1px solid rgba(255,255,255,0.12)",
   borderRadius: 14,
   outline: "none",
-  background: "rgba(7,26,46,0.72)",
-  color: "#FFFFFF",
-  fontSize: 16,
-};
-
-const primaryButtonStyle = {
-  padding: "14px 16px",
-  border: 0,
-  borderRadius: 17,
-  background: theme.colors.primary,
-  color: theme.colors.background,
-  fontSize: 15,
-  fontWeight: 850,
-  cursor: "pointer",
-};
-
-const secondaryButtonStyle = {
-  padding: "14px 16px",
-  border: "1px solid rgba(255,255,255,0.13)",
-  borderRadius: 17,
-  background: theme.colors.card,
+  background:
+    "rgba(7,26,46,0.68)",
   color: theme.colors.text,
   fontSize: 15,
-  fontWeight: 750,
-  cursor: "pointer",
 };
 
 export default Budget;
