@@ -15,6 +15,7 @@ import AppSettings from "./AppSettings";
 import TripSimulator from "./TripSimulator";
 import PreTripCheck from "./PreTripCheck";
 import PrivateTravelData from "./PrivateTravelData";
+import DocumentVault from "./DocumentVault";
 import { theme } from "../styles/theme";
 
 type MoreSection =
@@ -34,7 +35,8 @@ type MoreSection =
   | "settings"
   | "simulator"
   | "pretrip"
-  | "private-data";
+  | "private-data"
+  | "documents";
 
 const menuItems = [
   {
@@ -55,6 +57,12 @@ const menuItems = [
     title: "Prenotazioni",
     subtitle: "Traghetti, auto e attività",
   },
+  {
+  id: "documents",
+  icon: "🗂️",
+  title: "Cassaforte documenti",
+  subtitle: "Voucher e biglietti disponibili offline",
+},
   {
     id: "roadtrip",
     icon: "🚗",
@@ -181,6 +189,7 @@ function More() {
     pretrip: <PreTripCheck />,
     simulator: <TripSimulator />,
     "private-data": <PrivateTravelData />,
+    documents: <DocumentVault />,
   };
 
   if (section !== "menu") {
