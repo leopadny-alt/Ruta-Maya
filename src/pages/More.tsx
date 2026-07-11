@@ -19,6 +19,7 @@ import DocumentVault from "./DocumentVault";
 import DailyAgenda from "./DailyAgenda";
 import TravelerProfile from "./TravelerProfile";
 import EmergencyLocation from "./EmergencyLocation";
+import TravelChecklist from "./TravelChecklist";
 import { theme } from "../styles/theme";
 
 type MoreSection =
@@ -42,6 +43,7 @@ type MoreSection =
   | "documents"
   | "agenda"
   | "emergency-location"
+  | "travel-checklist"
   | "profile";
 
 const menuItems = [
@@ -50,6 +52,12 @@ const menuItems = [
   icon: "👤",
   title: "Il mio profilo",
   subtitle: "Personalizza questo dispositivo",
+},
+{
+  id: "travel-checklist",
+  icon: "✅",
+  title: "Checklist viaggio",
+  subtitle: "Preparazione e cose da ricordare",
 },
   {
     id: "accommodations",
@@ -217,6 +225,7 @@ function More() {
     agenda: <DailyAgenda />,
     profile: <TravelerProfile />,
     "emergency-location": <EmergencyLocation />,
+    "travel-checklist": <TravelChecklist />,
   };
 
   if (section !== "menu") {
