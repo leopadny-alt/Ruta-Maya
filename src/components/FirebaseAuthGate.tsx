@@ -49,43 +49,6 @@ export function useFirebaseAuth(): FirebaseAuthContextValue {
   return context;
 }
 
-function getLoginErrorMessage(
-  error: unknown,
-): string {
-  if (!(error instanceof FirebaseError)) {
-    return "Accesso non riuscito. Riprova.";
-  }
-
-  if (
-    error.code ===
-    "auth/popup-closed-by-user"
-  ) {
-    return "Accesso annullato prima del completamento.";
-  }
-
-  if (
-    error.code === "auth/popup-blocked"
-  ) {
-    return "Il browser ha bloccato la finestra di accesso. Consenti i popup e riprova.";
-  }
-
-  if (
-    error.code ===
-    "auth/unauthorized-domain"
-  ) {
-    return "Questo dominio non è autorizzato in Firebase Authentication.";
-  }
-
-  if (
-    error.code ===
-    "auth/network-request-failed"
-  ) {
-    return "Connessione non disponibile. Puoi continuare offline e accedere più tardi.";
-  }
-
-  return "Accesso Google non riuscito. Riprova.";
-}
-
 function FirebaseAuthGate({
   children,
 }: FirebaseAuthGateProps) {
@@ -134,9 +97,20 @@ function FirebaseAuthGate({
     try {
       await signInWithGoogle();
     } catch (error) {
-      setErrorMessage(
-        getLoginErrorMessage(error),
+      console.error(
+        "Firebase Google login error:",
+        error,
       );
+
+      if (error instanceof FirebaseError) {
+        setErrorMessage(
+          `${error.code}: ${error.message}`,
+        );
+      } else {
+        setErrorMessage(
+          "Errore sconosciuto durante l’accesso Google.",
+        );
+      }
     } finally {
       setIsSigningIn(false);
     }

@@ -3,38 +3,21 @@ import {
   useMemo,
   useState,
 } from "react";
+import { useFirebaseAuth } from "../components/FirebaseAuthGate";
+import {
+  type BudgetSyncStatus,
+  type Currency,
+  type Expense,
+  useSharedBudget,
+} from "../hooks/useSharedBudget";
 import { theme } from "../styles/theme";
 import { getTravelerProfile } from "../utils/travelerProfile";
-
-type Currency = "EUR" | "MXN";
-
-type Expense = {
-  id: string;
-  description: string;
-  /**
-   * Importo normalizzato in euro, usato per tutti i calcoli.
-   * Le vecchie spese già salvate restano compatibili.
-   */
-  amount: number;
-  originalAmount?: number;
-  currency?: Currency;
-  exchangeRate?: number;
-  paidBy: string;
-  participants: string[];
-  createdAt: string;
-};
 
 type Settlement = {
   from: string;
   to: string;
   amount: number;
 };
-
-const EXPENSES_STORAGE_KEY =
-  "ruta-maya-expenses";
-
-const PEOPLE_STORAGE_KEY =
-  "ruta-maya-people";
 
 const EXCHANGE_RATE_STORAGE_KEY =
   "ruta-maya-eur-mxn-rate";
@@ -46,10 +29,10 @@ const DEFAULT_EUR_MXN_RATE = 20;
 
 const defaultPeople = [
   "Leonardo",
-  "Amico 2",
-  "Amico 3",
-  "Amico 4",
-  "Amico 5",
+  "Eva",
+  "Stefano",
+  "Valentina",
+  "Maristella",
 ];
 
 function formatCurrency(
@@ -82,11 +65,39 @@ function parseDecimal(value: string) {
 function Budget() {
   const traveler = getTravelerProfile();
 
-  const [people, setPeople] =
-    useState<string[]>(defaultPeople);
+  const {
+    user,
+    isAuthenticated,
+  } = useFirebaseAuth();
 
-  const [expenses, setExpenses] =
-    useState<Expense[]>([]);
+  const creatorName =
+    traveler ||
+    user?.displayName ||
+    user?.email ||
+    "Partecipante";
+
+  const {
+    expenses,
+    isSharedMode,
+    syncStatus,
+    syncError,
+    isOnline,
+    isImporting,
+    localExpensesToImport,
+    saveExpense,
+    removeExpense,
+    resetLocalExpenses,
+    importLocalExpenses,
+    canDeleteExpense,
+  } = useSharedBudget({
+    user:
+      isAuthenticated && user
+        ? user
+        : null,
+    creatorName,
+  });
+
+  const people = defaultPeople;
 
   const [description, setDescription] =
     useState("");
@@ -148,67 +159,6 @@ function Budget() {
     showPeopleForm,
     setShowPeopleForm,
   ] = useState(false);
-
-  useEffect(() => {
-    const savedPeople =
-      localStorage.getItem(
-        PEOPLE_STORAGE_KEY,
-      );
-
-    const savedExpenses =
-      localStorage.getItem(
-        EXPENSES_STORAGE_KEY,
-      );
-
-    if (savedPeople) {
-      try {
-        const parsedPeople =
-          JSON.parse(savedPeople);
-
-        if (
-          Array.isArray(parsedPeople) &&
-          parsedPeople.length === 5
-        ) {
-          setPeople(parsedPeople);
-          setPaidBy(parsedPeople[0]);
-          setParticipants(parsedPeople);
-        }
-      } catch {
-        localStorage.removeItem(
-          PEOPLE_STORAGE_KEY,
-        );
-      }
-    }
-
-    if (savedExpenses) {
-      try {
-        const parsedExpenses =
-          JSON.parse(savedExpenses);
-
-        if (Array.isArray(parsedExpenses)) {
-          setExpenses(parsedExpenses);
-        }
-      } catch {
-        localStorage.removeItem(
-          EXPENSES_STORAGE_KEY,
-        );
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(
-      EXPENSES_STORAGE_KEY,
-      JSON.stringify(expenses),
-    );
-  }, [expenses]);
-
-  useEffect(() => {
-    localStorage.setItem(
-      PEOPLE_STORAGE_KEY,
-      JSON.stringify(people),
-    );
-  }, [people]);
 
   useEffect(() => {
     localStorage.setItem(
@@ -381,8 +331,7 @@ function Budget() {
         ? numericAmount / eurMxnRate
         : numericAmount;
 
-    const newExpense: Expense = {
-      id: crypto.randomUUID(),
+    saveExpense({
       description:
         description.trim(),
       amount: amountInEuro,
@@ -393,14 +342,7 @@ function Budget() {
       participants,
       createdAt:
         new Date().toISOString(),
-    };
-
-    setExpenses(
-      (currentExpenses) => [
-        newExpense,
-        ...currentExpenses,
-      ],
-    );
+    });
 
     setDescription("");
     setAmount("");
@@ -409,7 +351,9 @@ function Budget() {
     setShowExpenseForm(false);
   }
 
-  function deleteExpense(id: string) {
+  function deleteExpense(
+    expense: Expense,
+  ) {
     const confirmed =
       window.confirm(
         "Vuoi eliminare questa spesa?",
@@ -419,106 +363,27 @@ function Budget() {
       return;
     }
 
-    setExpenses(
-      (currentExpenses) =>
-        currentExpenses.filter(
-          (expense) =>
-            expense.id !== id,
-        ),
-    );
+    removeExpense(expense);
   }
 
   function resetExpenses() {
-    if (expenses.length === 0) {
+    if (
+      isSharedMode ||
+      expenses.length === 0
+    ) {
       return;
     }
 
     const confirmed =
       window.confirm(
-        "Vuoi eliminare tutte le spese inserite?",
+        "Vuoi eliminare tutte le spese salvate su questo telefono?",
       );
 
     if (!confirmed) {
       return;
     }
 
-    setExpenses([]);
-  }
-
-  function updatePerson(
-    index: number,
-    value: string,
-  ) {
-    setPeople((currentPeople) =>
-      currentPeople.map(
-        (person, personIndex) =>
-          personIndex === index
-            ? value
-            : person,
-      ),
-    );
-  }
-
-  function savePeople() {
-    const cleanedPeople =
-      people.map((person) =>
-        person.trim(),
-      );
-
-    if (
-      cleanedPeople.some(
-        (person) => !person,
-      )
-    ) {
-      alert(
-        "Inserisci tutti e cinque i nomi.",
-      );
-
-      return;
-    }
-
-    if (
-      new Set(cleanedPeople).size !==
-      cleanedPeople.length
-    ) {
-      alert(
-        "Ogni partecipante deve avere un nome diverso.",
-      );
-
-      return;
-    }
-
-    const oldPeople = [...people];
-
-    setPeople(cleanedPeople);
-    setPaidBy(cleanedPeople[0]);
-    setParticipants(cleanedPeople);
-
-    setExpenses(
-      (currentExpenses) =>
-        currentExpenses.map(
-          (expense) => ({
-            ...expense,
-            paidBy:
-              cleanedPeople[
-                oldPeople.indexOf(
-                  expense.paidBy,
-                )
-              ] ?? expense.paidBy,
-            participants:
-              expense.participants.map(
-                (participant) =>
-                  cleanedPeople[
-                    oldPeople.indexOf(
-                      participant,
-                    )
-                  ] ?? participant,
-              ),
-          }),
-        ),
-    );
-
-    setShowPeopleForm(false);
+    resetLocalExpenses();
   }
 
   return (
@@ -624,6 +489,99 @@ function Budget() {
           </div>
         </div>
       </header>
+
+      <BudgetSyncCard
+        isSharedMode={isSharedMode}
+        status={syncStatus}
+        error={syncError}
+        isOnline={isOnline}
+        accountLabel={
+          user?.email ??
+          user?.displayName ??
+          creatorName
+        }
+      />
+
+      {isSharedMode &&
+        localExpensesToImport.length > 0 && (
+          <section
+            style={{
+              marginTop: 12,
+              padding: 15,
+              borderRadius: 18,
+              background:
+                "rgba(195,168,255,0.10)",
+              border:
+                "1px solid rgba(195,168,255,0.20)",
+            }}
+          >
+            <strong
+              style={{
+                display: "block",
+                fontSize: 13,
+              }}
+            >
+              Importa le spese già presenti
+            </strong>
+
+            <p
+              style={{
+                margin: "6px 0 0",
+                color:
+                  theme.colors.textSoft,
+                fontSize: 11,
+                lineHeight: 1.5,
+              }}
+            >
+              Hai{" "}
+              {localExpensesToImport.length}{" "}
+              {localExpensesToImport.length === 1
+                ? "spesa locale"
+                : "spese locali"}{" "}
+              salvate su questo telefono.
+              Puoi copiarle nel Budget
+              condiviso senza cancellare il
+              backup locale.
+            </p>
+
+            <button
+              type="button"
+              onClick={() =>
+                void importLocalExpenses()
+              }
+              disabled={
+                isImporting || !isOnline
+              }
+              style={{
+                width: "100%",
+                marginTop: 12,
+                padding: 12,
+                border: 0,
+                borderRadius: 14,
+                background:
+                  isImporting || !isOnline
+                    ? "rgba(255,255,255,0.12)"
+                    : "#C3A8FF",
+                color:
+                  isImporting || !isOnline
+                    ? theme.colors.textSoft
+                    : theme.colors.background,
+                fontWeight: 900,
+                cursor:
+                  isImporting || !isOnline
+                    ? "not-allowed"
+                    : "pointer",
+              }}
+            >
+              {isImporting
+                ? "Importazione in corso…"
+                : isOnline
+                  ? "Importa nel Budget condiviso"
+                  : "Connettiti per importare"}
+            </button>
+          </section>
+        )}
+
 
       <section
         style={{
@@ -852,9 +810,9 @@ function Budget() {
               lineHeight: 1.5,
             }}
           >
-            Le modifiche verranno
-            applicate anche alle spese già
-            registrate.
+            Il gruppo condiviso è composto da
+            Leonardo, Eva, Stefano, Valentina e
+            Maristella.
           </p>
 
           <div
@@ -866,8 +824,8 @@ function Budget() {
           >
             {people.map(
               (person, index) => (
-                <label
-                  key={index}
+                <div
+                  key={person}
                   style={{
                     display: "grid",
                     gridTemplateColumns:
@@ -894,43 +852,24 @@ function Budget() {
                     {index + 1}
                   </span>
 
-                  <input
-                    value={person}
-                    onChange={(event) =>
-                      updatePerson(
-                        index,
-                        event.target.value,
-                      )
-                    }
-                    aria-label={`Partecipante ${
-                      index + 1
-                    }`}
-                    style={inputStyle}
-                  />
-                </label>
+                  <div
+                    style={{
+                      padding: "13px 14px",
+                      border:
+                        "1px solid rgba(255,255,255,0.09)",
+                      borderRadius: 14,
+                      background:
+                        "rgba(7,26,46,0.45)",
+                      fontSize: 15,
+                      fontWeight: 800,
+                    }}
+                  >
+                    {person}
+                  </div>
+                </div>
               ),
             )}
           </div>
-
-          <button
-            type="button"
-            onClick={savePeople}
-            style={{
-              width: "100%",
-              marginTop: 18,
-              padding: 13,
-              border: 0,
-              borderRadius: 15,
-              background:
-                theme.colors.primary,
-              color:
-                theme.colors.background,
-              fontWeight: 900,
-              cursor: "pointer",
-            }}
-          >
-            Salva partecipanti
-          </button>
         </section>
       )}
 
@@ -1577,6 +1516,9 @@ function Budget() {
               >
                 Pagata da {latestExpense.paidBy} ·{" "}
                 {latestExpense.participants.length} partecipanti
+                {latestExpense.createdByName
+                  ? ` · Inserita da ${latestExpense.createdByName}`
+                  : ""}
               </span>
 
               <span
@@ -1647,7 +1589,8 @@ function Budget() {
             count={expenses.length}
           />
 
-          {expenses.length > 0 && (
+          {!isSharedMode &&
+            expenses.length > 0 && (
             <button
               type="button"
               onClick={resetExpenses}
@@ -1678,7 +1621,7 @@ function Budget() {
             <EmptyCard
               icon="🧾"
               title="Nessuna spesa"
-              text="Le spese registrate durante il viaggio appariranno qui."
+              text={isSharedMode ? "Le spese inserite dal gruppo appariranno qui in tempo reale." : "Le spese registrate su questo telefono appariranno qui."}
             />
           ) : (
             <div
@@ -1757,6 +1700,9 @@ function Budget() {
                         >
                           Pagata da{" "}
                           {expense.paidBy}
+                          {expense.createdByName
+                            ? ` · Inserita da ${expense.createdByName}`
+                            : ""}
                         </span>
 
                         <span
@@ -1805,30 +1751,34 @@ function Budget() {
                           )}
                         </strong>
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            deleteExpense(
-                              expense.id,
-                            )
-                          }
-                          style={{
-                            display: "block",
-                            margin:
-                              "10px 0 0 auto",
-                            padding: 0,
-                            border: 0,
-                            background:
-                              "transparent",
-                            color:
-                              "#FFB4A8",
-                            fontSize: 10,
-                            fontWeight: 800,
-                            cursor: "pointer",
-                          }}
-                        >
-                          Elimina
-                        </button>
+                        {canDeleteExpense(
+                          expense,
+                        ) && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              deleteExpense(
+                                expense,
+                              )
+                            }
+                            style={{
+                              display: "block",
+                              margin:
+                                "10px 0 0 auto",
+                              padding: 0,
+                              border: 0,
+                              background:
+                                "transparent",
+                              color:
+                                "#FFB4A8",
+                              fontSize: 10,
+                              fontWeight: 800,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Elimina
+                          </button>
+                        )}
                       </div>
                     </div>
                   </article>
@@ -1839,6 +1789,154 @@ function Budget() {
         </div>
       </section>
     </main>
+  );
+}
+
+function BudgetSyncCard({
+  isSharedMode,
+  status,
+  error,
+  isOnline,
+  accountLabel,
+}: {
+  isSharedMode: boolean;
+  status: BudgetSyncStatus;
+  error: string;
+  isOnline: boolean;
+  accountLabel: string;
+}) {
+  const configuration = (() => {
+    if (!isSharedMode) {
+      return {
+        icon: "📱",
+        title: "Solo su questo telefono",
+        text:
+          "Le spese restano locali finché non accedi con Google.",
+        color: "#F4D58D",
+      };
+    }
+
+    if (
+      status === "unauthorized"
+    ) {
+      return {
+        icon: "🔒",
+        title: "Account non autorizzato",
+        text:
+          error ||
+          "Aggiungi questo account tra i membri del viaggio.",
+        color: "#FF9D9D",
+      };
+    }
+
+    if (status === "error") {
+      return {
+        icon: "⚠️",
+        title: "Errore di sincronizzazione",
+        text:
+          error ||
+          "Controlla la connessione e riprova.",
+        color: "#FF9D9D",
+      };
+    }
+
+    if (
+      status === "offline" ||
+      !isOnline
+    ) {
+      return {
+        icon: "☁️",
+        title: "Offline — modifiche in coda",
+        text:
+          "Le spese restano disponibili e verranno sincronizzate al ritorno della connessione.",
+        color: "#F4D58D",
+      };
+    }
+
+    if (
+      status === "loading" ||
+      status === "syncing"
+    ) {
+      return {
+        icon: "◌",
+        title:
+          status === "loading"
+            ? "Caricamento Budget condiviso"
+            : "Sincronizzazione in corso",
+        text:
+          "Stiamo allineando le spese con gli altri dispositivi.",
+        color: "#6ED4FF",
+      };
+    }
+
+    return {
+      icon: "●",
+      title: "Budget condiviso sincronizzato",
+      text: accountLabel,
+      color: theme.colors.primary,
+    };
+  })();
+
+  return (
+    <section
+      style={{
+        display: "grid",
+        gridTemplateColumns:
+          "42px 1fr",
+        alignItems: "center",
+        gap: 12,
+        marginTop: 18,
+        padding: 14,
+        borderRadius: 18,
+        background:
+          `${configuration.color}12`,
+        border:
+          `1px solid ${configuration.color}24`,
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 42,
+          height: 42,
+          display: "grid",
+          placeItems: "center",
+          borderRadius: 14,
+          background:
+            `${configuration.color}17`,
+          color: configuration.color,
+          fontSize: 18,
+        }}
+      >
+        {configuration.icon}
+      </span>
+
+      <div>
+        <strong
+          style={{
+            display: "block",
+            color: configuration.color,
+            fontSize: 12,
+          }}
+        >
+          {configuration.title}
+        </strong>
+
+        <span
+          style={{
+            display: "block",
+            marginTop: 4,
+            color:
+              theme.colors.textSoft,
+            fontSize: 10,
+            lineHeight: 1.45,
+            wordBreak: "break-word",
+          }}
+        >
+          {configuration.text}
+        </span>
+      </div>
+    </section>
   );
 }
 
