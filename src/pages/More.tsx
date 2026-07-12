@@ -759,7 +759,6 @@ function More() {
       "calc(18px + env(safe-area-inset-top))",
   }}
 >
-            >
               <button
                 type="button"
                 onClick={() =>
