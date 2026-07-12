@@ -372,6 +372,29 @@ function More() {
       behavior: "instant",
     });
   }
+  function toggleCategory(category: ToolCategory) {
+  const isCurrentlyOpen =
+    openCategory === category;
+
+  if (isCurrentlyOpen) {
+    setOpenCategory(null);
+    return;
+  }
+
+  setOpenCategory(category);
+
+  window.setTimeout(() => {
+    const categoryElement =
+      document.getElementById(
+        `tool-category-${category}`,
+      );
+
+    categoryElement?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, 120);
+}
 
   if (section !== "menu") {
     return (
@@ -728,18 +751,20 @@ function More() {
 
           return (
             <section
-              key={category}
-              style={{
-                marginTop: 18,
-              }}
+  key={category}
+  id={`tool-category-${category}`}
+  style={{
+    marginTop: 18,
+    scrollMarginTop:
+      "calc(18px + env(safe-area-inset-top))",
+  }}
+>
             >
               <button
                 type="button"
                 onClick={() =>
-                  setOpenCategory(
-                    isOpen ? null : category,
-                  )
-                }
+  toggleCategory(category)
+}
                 aria-expanded={isOpen}
                 style={{
                   width: "100%",
