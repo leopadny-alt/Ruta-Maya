@@ -9,6 +9,7 @@ import BottomNavigation, {
   type Tab,
 } from "./components/BottomNavigation";
 import ConnectionStatus from "./components/ConnectionStatus";
+import FirebaseAuthGate from "./components/FirebaseAuthGate";
 import PageLoader from "./components/PageLoader";
 import PageTransition from "./components/PageTransition";
 import SplashScreen from "./components/SplashScreen";
@@ -85,18 +86,20 @@ function App() {
 
   return (
     <AppErrorBoundary>
-      <ConnectionStatus />
+      <FirebaseAuthGate>
+        <ConnectionStatus />
 
-      <Suspense fallback={<PageLoader />}>
-        <PageTransition pageKey={activeTab}>
-          {currentPage}
-        </PageTransition>
-      </Suspense>
+        <Suspense fallback={<PageLoader />}>
+          <PageTransition pageKey={activeTab}>
+            {currentPage}
+          </PageTransition>
+        </Suspense>
 
-      <BottomNavigation
-        activeTab={activeTab}
-        onChange={navigateTo}
-      />
+        <BottomNavigation
+          activeTab={activeTab}
+          onChange={navigateTo}
+        />
+      </FirebaseAuthGate>
     </AppErrorBoundary>
   );
 }
