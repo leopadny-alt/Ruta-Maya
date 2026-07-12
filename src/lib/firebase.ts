@@ -4,10 +4,8 @@ import {
 } from "firebase/app";
 
 import {
-  browserLocalPersistence,
   getAuth,
   GoogleAuthProvider,
-  setPersistence,
   signInWithPopup,
   signOut,
   type UserCredential,
@@ -62,12 +60,7 @@ if (existingApp) {
 
 export const db = firestoreDatabase;
 
-export async function signInWithGoogle(): Promise<UserCredential> {
-  await setPersistence(
-    auth,
-    browserLocalPersistence,
-  );
-
+export function signInWithGoogle(): Promise<UserCredential> {
   return signInWithPopup(
     auth,
     googleProvider,
