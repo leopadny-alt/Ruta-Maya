@@ -286,6 +286,9 @@ function More() {
   const [searchQuery, setSearchQuery] =
     useState("");
 
+  const [openCategory, setOpenCategory] =
+    useState<ToolCategory | null>("Viaggio");
+
   const traveler = getTravelerProfile();
 
   const pages: Partial<
@@ -419,7 +422,7 @@ function More() {
         minHeight: "100vh",
         boxSizing: "border-box",
         padding:
-          "calc(23px + env(safe-area-inset-top)) 18px 116px",
+          "calc(23px + env(safe-area-inset-top)) 18px calc(176px + env(safe-area-inset-bottom))",
         background: `
           radial-gradient(
             circle at 92% 3%,
@@ -720,110 +723,150 @@ function More() {
                 category,
             );
 
+          const isOpen =
+            openCategory === category;
+
           return (
             <section
               key={category}
               style={{
-                marginTop: 29,
+                marginTop: 18,
               }}
             >
-              <SectionHeading
-                eyebrow={getCategoryEyebrow(
-                  category,
-                )}
-                title={category}
-                count={
-                  categoryItems.length
+              <button
+                type="button"
+                onClick={() =>
+                  setOpenCategory(
+                    isOpen ? null : category,
+                  )
                 }
-              />
-
-              <div
+                aria-expanded={isOpen}
                 style={{
-                  display: "grid",
-                  gap: 9,
-                  marginTop: 14,
+                  width: "100%",
+                  padding: "17px 18px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent:
+                    "space-between",
+                  gap: 14,
+                  border:
+                    "1px solid rgba(255,255,255,0.09)",
+                  borderRadius: isOpen
+                    ? "22px 22px 16px 16px"
+                    : 22,
+                  background:
+                    "rgba(255,255,255,0.065)",
+                  boxShadow:
+                    "0 10px 26px rgba(0,0,0,0.12)",
+                  color: theme.colors.text,
+                  textAlign: "left",
+                  cursor: "pointer",
                 }}
               >
-                {categoryItems.map(
-                  (item) => (
-                    <ToolRow
-                      key={item.id}
-                      item={item}
-                      onClick={() =>
-                        openSection(
-                          item.id,
-                        )
-                      }
-                    />
-                  ),
-                )}
-              </div>
+                <div>
+                  <p
+                    style={{
+                      margin: 0,
+                      color:
+                        theme.colors.primary,
+                      fontSize: 10,
+                      fontWeight: 900,
+                      letterSpacing: 1.1,
+                      textTransform:
+                        "uppercase",
+                    }}
+                  >
+                    {getCategoryEyebrow(
+                      category,
+                    )}
+                  </p>
+
+                  <h2
+                    style={{
+                      margin: "5px 0 0",
+                      fontSize: 22,
+                      lineHeight: 1.2,
+                      letterSpacing: -0.3,
+                    }}
+                  >
+                    {category}
+                  </h2>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                  }}
+                >
+                  <span
+                    style={{
+                      minWidth: 29,
+                      padding: "6px 9px",
+                      borderRadius: 999,
+                      background:
+                        "rgba(17,197,191,0.12)",
+                      color:
+                        theme.colors.primary,
+                      fontSize: 10,
+                      fontWeight: 900,
+                      textAlign: "center",
+                    }}
+                  >
+                    {categoryItems.length}
+                  </span>
+
+                  <span
+                    style={{
+                      width: 30,
+                      height: 30,
+                      display: "grid",
+                      placeItems: "center",
+                      borderRadius: 10,
+                      background:
+                        "rgba(255,255,255,0.06)",
+                      color:
+                        theme.colors.textSoft,
+                      fontSize: 18,
+                      transform: isOpen
+                        ? "rotate(180deg)"
+                        : "rotate(0deg)",
+                      transition:
+                        "transform 180ms ease",
+                    }}
+                  >
+                    ⌄
+                  </span>
+                </div>
+              </button>
+
+              {isOpen && (
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 9,
+                    marginTop: 9,
+                  }}
+                >
+                  {categoryItems.map(
+                    (item) => (
+                      <ToolRow
+                        key={item.id}
+                        item={item}
+                        onClick={() =>
+                          openSection(
+                            item.id,
+                          )
+                        }
+                      />
+                    ),
+                  )}
+                </div>
+              )}
             </section>
           );
         })
-      )}
-
-      {!normalizedSearch && (
-        <section
-          style={{
-            marginTop: 29,
-            padding: 20,
-            borderRadius: 23,
-            background:
-              "linear-gradient(135deg, rgba(17,197,191,0.12), rgba(195,168,255,0.08))",
-            border:
-              "1px solid rgba(255,255,255,0.09)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 13,
-            }}
-          >
-            <span
-              style={{
-                width: 45,
-                height: 45,
-                display: "grid",
-                placeItems: "center",
-                flexShrink: 0,
-                borderRadius: 15,
-                background:
-                  "rgba(17,197,191,0.14)",
-                fontSize: 21,
-              }}
-            >
-              🇲🇽
-            </span>
-
-            <div>
-              <strong
-                style={{
-                  display: "block",
-                  fontSize: 17,
-                }}
-              >
-                Ruta Maya v1.0
-              </strong>
-
-              <p
-                style={{
-                  margin: "7px 0 0",
-                  color:
-                    theme.colors.textSoft,
-                  fontSize: 12,
-                  lineHeight: 1.5,
-                }}
-              >
-                22 strumenti disponibili
-                per il viaggio e il test
-                sul campo.
-              </p>
-            </div>
-          </div>
-        </section>
       )}
     </main>
   );
