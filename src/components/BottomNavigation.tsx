@@ -1,4 +1,8 @@
-import type { ReactNode } from "react";
+import type {
+  CSSProperties,
+  ReactNode,
+} from "react";
+import { theme } from "../styles/theme";
 
 export type Tab =
   | "home"
@@ -24,31 +28,31 @@ const navigationItems: NavigationItem[] = [
     id: "home",
     label: "Home",
     icon: <HomeIcon />,
-    accent: "#11C5BF",
+    accent: theme.colors.primary,
   },
   {
     id: "map",
     label: "Mappa",
     icon: <MapIcon />,
-    accent: "#6ED4FF",
+    accent: theme.colors.info,
   },
   {
     id: "itinerary",
     label: "Itinerario",
     icon: <CalendarIcon />,
-    accent: "#F4D58D",
+    accent: theme.colors.secondary,
   },
   {
     id: "budget",
     label: "Budget",
     icon: <WalletIcon />,
-    accent: "#FFB86B",
+    accent: theme.colors.warning,
   },
   {
     id: "more",
     label: "Altro",
     icon: <MoreIcon />,
-    accent: "#C3A8FF",
+    accent: "#C7AEFF",
   },
 ];
 
@@ -59,35 +63,14 @@ function BottomNavigation({
   return (
     <nav
       aria-label="Navigazione principale"
-      style={{
-        position: "fixed",
-        left: 12,
-        right: 12,
-        bottom:
-          "calc(9px + env(safe-area-inset-bottom))",
-        zIndex: 4000,
-        maxWidth: 690,
-        margin: "0 auto",
-        padding: 7,
-        border:
-          "1px solid rgba(255,255,255,0.12)",
-        borderRadius: 27,
-        background:
-          "linear-gradient(180deg, rgba(8,27,46,0.91), rgba(4,17,31,0.94))",
-        boxShadow:
-          "0 22px 55px rgba(0,0,0,0.46), inset 0 1px 0 rgba(255,255,255,0.055)",
-        backdropFilter:
-          "blur(26px) saturate(155%)",
-        WebkitBackdropFilter:
-          "blur(26px) saturate(155%)",
-      }}
+      style={navigationStyle}
     >
       <div
         style={{
           display: "grid",
           gridTemplateColumns:
             "repeat(5, minmax(0, 1fr))",
-          gap: 4,
+          gap: 3,
         }}
       >
         {navigationItems.map((item) => {
@@ -104,95 +87,87 @@ function BottomNavigation({
                   ? "page"
                   : undefined
               }
+              title={item.label}
               onClick={() =>
                 onChange(item.id)
               }
               style={{
                 position: "relative",
                 minWidth: 0,
-                minHeight: 59,
+                minHeight: 54,
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent:
                   "center",
-                gap: 4,
-                padding: "7px 3px",
+                gap: 3,
+                padding: "5px 2px 4px",
                 border: 0,
-                borderRadius: 20,
+                borderRadius: 18,
+                outline: "none",
                 background: isActive
                   ? `linear-gradient(
                       180deg,
-                      ${item.accent}20,
-                      ${item.accent}0A
+                      ${item.accent}22,
+                      ${item.accent}0D
                     )`
                   : "transparent",
                 color: isActive
                   ? item.accent
-                  : "rgba(255,255,255,0.52)",
+                  : theme.colors.textMuted,
                 cursor: "pointer",
-                overflow: "hidden",
-                transition:
-                  "background 180ms ease, color 180ms ease, transform 160ms ease",
                 WebkitTapHighlightColor:
                   "transparent",
+                touchAction: "manipulation",
+                transition: `
+                  background ${theme.motion.fast},
+                  color ${theme.motion.fast},
+                  transform ${theme.motion.fast}
+                `,
               }}
             >
               {isActive && (
-                <>
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      position:
-                        "absolute",
-                      top: 0,
-                      left: "50%",
-                      width: 25,
-                      height: 3,
-                      borderRadius:
-                        "0 0 999px 999px",
-                      background:
-                        item.accent,
-                      boxShadow: `0 0 15px ${item.accent}B3`,
-                      transform:
-                        "translateX(-50%)",
-                    }}
-                  />
-
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      position:
-                        "absolute",
-                      top: 8,
-                      left: "50%",
-                      width: 42,
-                      height: 42,
-                      borderRadius:
-                        "50%",
-                      background: `${item.accent}12`,
-                      filter: "blur(5px)",
-                      transform:
-                        "translateX(-50%)",
-                    }}
-                  />
-                </>
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: "50%",
+                    width: 24,
+                    height: 2,
+                    borderRadius:
+                      "0 0 999px 999px",
+                    background:
+                      item.accent,
+                    boxShadow: `0 0 13px ${item.accent}99`,
+                    transform:
+                      "translateX(-50%)",
+                  }}
+                />
               )}
 
               <span
                 aria-hidden="true"
                 style={{
                   position: "relative",
-                  zIndex: 1,
-                  width: 28,
-                  height: 28,
+                  width: 31,
+                  height: 31,
                   display: "grid",
                   placeItems: "center",
+                  borderRadius: 11,
+                  background: isActive
+                    ? `${item.accent}16`
+                    : "transparent",
+                  boxShadow: isActive
+                    ? `inset 0 0 0 1px ${item.accent}1C`
+                    : "none",
                   transform: isActive
-                    ? "translateY(-1px) scale(1.08)"
-                    : "scale(1)",
-                  transition:
-                    "transform 190ms cubic-bezier(0.22,1,0.36,1)",
+                    ? "translateY(-1px)"
+                    : "translateY(0)",
+                  transition: `
+                    transform ${theme.motion.normal},
+                    background ${theme.motion.fast}
+                  `,
                 }}
               >
                 {item.icon}
@@ -200,20 +175,19 @@ function BottomNavigation({
 
               <span
                 style={{
-                  position: "relative",
-                  zIndex: 1,
                   maxWidth: "100%",
                   overflow: "hidden",
                   textOverflow:
                     "ellipsis",
                   whiteSpace: "nowrap",
-                  fontSize: 9.5,
+                  fontSize: isActive
+                    ? 10
+                    : 9.5,
+                  lineHeight: 1.05,
                   fontWeight: isActive
                     ? 900
-                    : 700,
-                  letterSpacing: 0.1,
-                  transition:
-                    "font-weight 180ms ease",
+                    : 750,
+                  letterSpacing: 0.05,
                 }}
               >
                 {item.label}
@@ -226,13 +200,37 @@ function BottomNavigation({
   );
 }
 
+const navigationStyle: CSSProperties = {
+  position: "fixed",
+  left: 10,
+  right: 10,
+  bottom:
+    "calc(7px + env(safe-area-inset-bottom))",
+  zIndex: 4000,
+  maxWidth: 620,
+  margin: "0 auto",
+  padding: 6,
+  border: `1px solid ${theme.colors.borderStrong}`,
+  borderRadius: 25,
+  background:
+    "linear-gradient(180deg, rgba(8,29,48,0.92), rgba(4,18,32,0.96))",
+  boxShadow: `
+    ${theme.shadows.floating},
+    inset 0 1px 0 rgba(255,255,255,0.055)
+  `,
+  backdropFilter:
+    "blur(24px) saturate(150%)",
+  WebkitBackdropFilter:
+    "blur(24px) saturate(150%)",
+};
+
 type IconProps = {
   size?: number;
 };
 
 function IconBase({
   children,
-  size = 23,
+  size = 22,
 }: IconProps & {
   children: ReactNode;
 }) {
@@ -243,7 +241,7 @@ function IconBase({
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.85"
+      strokeWidth="1.9"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
