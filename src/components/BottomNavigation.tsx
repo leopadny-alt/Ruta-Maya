@@ -56,6 +56,21 @@ function BottomNavigation({
   activeTab,
   onChange,
 }: BottomNavigationProps) {
+  function handleNavigation(tab: Tab) {
+    if (
+      tab === "more" &&
+      activeTab === "more"
+    ) {
+      window.dispatchEvent(
+        new Event(
+          "ruta-maya:open-tools-menu",
+        ),
+      );
+    }
+
+    onChange(tab);
+  }
+
   return (
     <nav
       aria-label="Navigazione principale"
@@ -105,7 +120,7 @@ function BottomNavigation({
                   : undefined
               }
               onClick={() =>
-                onChange(item.id)
+                handleNavigation(item.id)
               }
               style={{
                 position: "relative",

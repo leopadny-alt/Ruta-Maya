@@ -2,6 +2,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type ReactNode,
 } from "react";
 import L from "leaflet";
 import {
@@ -106,67 +107,56 @@ const categoryConfig: Record<
   MapLocationType,
   {
     label: string;
-    icon: string;
     color: string;
   }
 > = {
   city: {
     label: "Città",
-    icon: "🏙️",
-    color: "#11C5BF",
+    color: theme.colors.primary,
   },
   beach: {
     label: "Mare",
-    icon: "🏝️",
-    color: "#48B8E8",
+    color: theme.colors.info,
   },
   ruins: {
     label: "Siti Maya",
-    icon: "🗿",
-    color: "#F4D58D",
+    color: theme.colors.secondary,
   },
   cenote: {
     label: "Cenote",
-    icon: "💧",
-    color: "#6ED4FF",
+    color: "#74D7FF",
   },
   ferry: {
     label: "Traghetti",
-    icon: "⛴️",
-    color: "#BFA7FF",
+    color: "#C7AEFF",
   },
   accommodation: {
     label: "Alloggi",
-    icon: "🏨",
-    color: "#FFB86B",
+    color: theme.colors.warning,
   },
   restaurant: {
     label: "Ristoranti",
-    icon: "🍽️",
-    color: "#FF8E8E",
+    color: theme.colors.danger,
   },
 };
 
 const categories: {
   id: FilterType;
   label: string;
-  icon: string;
 }[] = [
-  { id: "all", label: "Tutti", icon: "✦" },
-  { id: "city", label: "Città", icon: "🏙️" },
-  { id: "beach", label: "Mare", icon: "🏝️" },
-  { id: "ruins", label: "Maya", icon: "🗿" },
-  { id: "cenote", label: "Cenote", icon: "💧" },
-  { id: "ferry", label: "Traghetti", icon: "⛴️" },
+  { id: "all", label: "Tutti" },
+  { id: "city", label: "Città" },
+  { id: "beach", label: "Mare" },
+  { id: "ruins", label: "Maya" },
+  { id: "cenote", label: "Cenote" },
+  { id: "ferry", label: "Traghetti" },
   {
     id: "accommodation",
     label: "Alloggi",
-    icon: "🏨",
   },
   {
     id: "restaurant",
     label: "Ristoranti",
-    icon: "🍽️",
   },
 ];
 
@@ -284,17 +274,52 @@ function createMarkerIcon(
         box-shadow:0 10px 24px rgba(0,0,0,.42);
       ">
         <span style="
-          display:block;
+          width:22px;
+          height:22px;
+          display:grid;
+          place-items:center;
+          color:${config.color};
           transform:rotate(45deg);
-          font-size:19px;
-          line-height:1;
-        ">${config.icon}</span>
+        ">${getMarkerSvgMarkup(type)}</span>
       </div>
     `,
     iconSize: [42, 42],
     iconAnchor: [21, 42],
     popupAnchor: [0, -42],
   });
+}
+
+function getMarkerSvgMarkup(
+  type: MapLocationType,
+) {
+  const common =
+    'width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"';
+
+  if (type === "city") {
+    return `<svg ${common}><path d="M4 21V9l5-3v15"/><path d="M9 21V4l7 3v14"/><path d="M16 21v-8l4-2v10"/><path d="M2 21h20"/></svg>`;
+  }
+
+  if (type === "beach") {
+    return `<svg ${common}><circle cx="17" cy="6" r="3"/><path d="M3 17c3-2 6-2 9 0s6 2 9 0"/><path d="M4 21h16"/><path d="M8 15c1-4 3-7 6-9"/></svg>`;
+  }
+
+  if (type === "ruins") {
+    return `<svg ${common}><path d="M4 20h16"/><path d="m6 20 2-4h8l2 4"/><path d="m8 16 2-4h4l2 4"/><path d="m10 12 2-5 2 5"/></svg>`;
+  }
+
+  if (type === "cenote") {
+    return `<svg ${common}><path d="M12 3s6 7 6 12a6 6 0 1 1-12 0c0-5 6-12 6-12Z"/></svg>`;
+  }
+
+  if (type === "ferry") {
+    return `<svg ${common}><path d="M4 13 12 5l8 8"/><path d="M6 13h12l-2 6H8Z"/><path d="M3 21c2-1 4-1 6 0 2-1 4-1 6 0 2-1 4-1 6 0"/></svg>`;
+  }
+
+  if (type === "accommodation") {
+    return `<svg ${common}><path d="M3 19v-8"/><path d="M21 19v-6a3 3 0 0 0-3-3H7a4 4 0 0 0-4 4"/><path d="M3 16h18"/><path d="M7 10V7h5a3 3 0 0 1 3 3"/></svg>`;
+  }
+
+  return `<svg ${common}><path d="M7 3v8"/><path d="M4 3v5a3 3 0 0 0 6 0V3"/><path d="M7 11v10"/><path d="M17 3v18"/><path d="M17 3c3 2 3 7 0 9"/></svg>`;
 }
 
 function getGoogleMapsUrl(
@@ -538,7 +563,7 @@ function MapPage() {
         minHeight: "100vh",
         boxSizing: "border-box",
         padding:
-          "calc(23px + env(safe-area-inset-top)) 18px 150px",
+          "calc(21px + env(safe-area-inset-top)) 18px calc(155px + env(safe-area-inset-bottom))",
         background: `
           radial-gradient(
             circle at 92% 4%,
@@ -577,7 +602,8 @@ function MapPage() {
                 margin: 0,
                 color:
                   theme.colors.primary,
-                fontSize: 11,
+                fontSize:
+                  theme.typography.eyebrow,
                 fontWeight: 900,
                 letterSpacing: 1.6,
                 textTransform:
@@ -590,7 +616,8 @@ function MapPage() {
             <h1
               style={{
                 margin: "7px 0 0",
-                fontSize: 34,
+                fontSize:
+                  theme.typography.display,
                 lineHeight: 1,
                 letterSpacing: -1,
               }}
@@ -603,7 +630,8 @@ function MapPage() {
                 margin: "9px 0 0",
                 color:
                   theme.colors.textSoft,
-                fontSize: 13,
+                fontSize:
+                  theme.typography.body,
                 lineHeight: 1.45,
               }}
             >
@@ -613,23 +641,25 @@ function MapPage() {
           </div>
 
           <div
+            aria-hidden="true"
             style={{
-              width: 55,
-              height: 55,
+              width: 54,
+              height: 54,
               display: "grid",
               placeItems: "center",
               flexShrink: 0,
               borderRadius: 18,
               background:
-                "linear-gradient(135deg, rgba(72,184,232,0.24), rgba(17,197,191,0.17))",
+                "linear-gradient(135deg, rgba(116,215,255,0.20), rgba(32,206,198,0.14))",
               border:
-                "1px solid rgba(255,255,255,0.11)",
+                `1px solid ${theme.colors.borderStrong}`,
               boxShadow:
-                "0 14px 32px rgba(0,0,0,0.22)",
-              fontSize: 25,
+                theme.shadows.card,
+              color:
+                theme.colors.info,
             }}
           >
-            🗺️
+            <MapIcon size={26} />
           </div>
         </div>
 
@@ -639,7 +669,7 @@ function MapPage() {
             gridTemplateColumns:
               "repeat(3, 1fr)",
             gap: 8,
-            marginTop: 23,
+            marginTop: 20,
           }}
         >
           <MapStat
@@ -672,7 +702,7 @@ function MapPage() {
               active={
                 viewMode === "today"
               }
-              icon="📍"
+              icon={<PinIcon />}
               label="Oggi"
               onClick={() =>
                 changeViewMode("today")
@@ -682,7 +712,7 @@ function MapPage() {
 
           <ViewButton
             active={viewMode === "all"}
-            icon="🗺️"
+            icon={<MapIcon />}
             label="Tutti"
             onClick={() =>
               changeViewMode("all")
@@ -693,7 +723,7 @@ function MapPage() {
             active={
               viewMode === "favorites"
             }
-            icon="★"
+            icon={<StarIcon />}
             label="Preferiti"
             onClick={() =>
               changeViewMode("favorites")
@@ -721,7 +751,7 @@ function MapPage() {
               fontSize: 18,
             }}
           >
-            ⌕
+            <SearchIcon />
           </span>
 
           <input
@@ -841,9 +871,18 @@ function MapPage() {
                     cursor: "pointer",
                   }}
                 >
-                  <span>
-                    {category.icon}
-                  </span>
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 8,
+                      height: 8,
+                      flexShrink: 0,
+                      borderRadius: "50%",
+                      background: isActive
+                        ? theme.colors.background
+                        : color,
+                    }}
+                  />
                   {category.label}
                 </button>
               );
@@ -875,9 +914,9 @@ function MapPage() {
       <section
         style={{
           position: "relative",
-          marginTop: 18,
+          marginTop: 15,
           overflow: "hidden",
-          borderRadius: 27,
+          borderRadius: 25,
           border:
             "1px solid rgba(255,255,255,0.12)",
           boxShadow:
@@ -890,8 +929,8 @@ function MapPage() {
           scrollWheelZoom
           style={{
             width: "100%",
-            height: "48vh",
-            minHeight: 390,
+            height:
+              "clamp(340px, 43vh, 480px)",
           }}
         >
           <MapAutoFit
@@ -944,10 +983,19 @@ function MapPage() {
                     >
                       <span
                         style={{
-                          fontSize: 22,
+                          width: 38,
+                          height: 38,
+                          display: "grid",
+                          placeItems: "center",
+                          borderRadius: 12,
+                          background: `${config.color}16`,
+                          color: config.color,
                         }}
                       >
-                        {config.icon}
+                        <LocationTypeIcon
+                          type={location.type}
+                          size={20}
+                        />
                       </span>
 
                       <strong
@@ -1045,8 +1093,12 @@ function MapPage() {
             left: 12,
             bottom: 12,
             zIndex: 500,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
             padding: "8px 11px",
-            borderRadius: 999,
+            borderRadius:
+              theme.radius.pill,
             background:
               "rgba(7,26,46,0.88)",
             border:
@@ -1057,7 +1109,8 @@ function MapPage() {
             backdropFilter: "blur(12px)",
           }}
         >
-          📍 {visibleLocations.length}{" "}
+          <PinIcon size={13} />
+          {visibleLocations.length}{" "}
           luoghi visibili
         </div>
       </section>
@@ -1173,7 +1226,7 @@ function ViewButton({
   onClick,
 }: {
   active: boolean;
-  icon: string;
+  icon: ReactNode;
   label: string;
   onClick: () => void;
 }) {
@@ -1183,7 +1236,12 @@ function ViewButton({
       onClick={onClick}
       style={{
         minWidth: 0,
-        padding: "11px 8px",
+        minHeight: 43,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 7,
+        padding: "9px 7px",
         border: active
           ? "1px solid transparent"
           : "1px solid rgba(255,255,255,0.09)",
@@ -1199,7 +1257,8 @@ function ViewButton({
         cursor: "pointer",
       }}
     >
-      {icon} {label}
+      {icon}
+      {label}
     </button>
   );
 }
@@ -1318,17 +1377,18 @@ function DayGroup({
 
         <span
           style={{
+            display: "grid",
+            placeItems: "center",
             color:
               theme.colors.primary,
-            fontSize: 23,
             transform: expanded
-              ? "rotate(90deg)"
-              : "none",
+              ? "rotate(180deg)"
+              : "rotate(0deg)",
             transition:
               "transform 180ms ease",
           }}
         >
-          ›
+          <ChevronDownIcon />
         </span>
       </button>
 
@@ -1374,7 +1434,7 @@ function MapStat({
   return (
     <div
       style={{
-        padding: "13px 7px",
+        padding: "11px 7px",
         borderRadius: 17,
         background:
           "rgba(255,255,255,0.06)",
@@ -1388,7 +1448,7 @@ function MapStat({
           display: "block",
           color:
             theme.colors.primary,
-          fontSize: 21,
+          fontSize: 20,
         }}
       >
         {value}
@@ -1506,6 +1566,7 @@ function LocationCard({
         }}
       >
         <span
+          aria-hidden="true"
           style={{
             width: compact ? 40 : 46,
             height: compact ? 40 : 46,
@@ -1513,11 +1574,14 @@ function LocationCard({
             placeItems: "center",
             flexShrink: 0,
             borderRadius: 14,
-            background: `${config.color}17`,
-            fontSize: compact ? 18 : 21,
+            background: `${config.color}14`,
+            color: config.color,
           }}
         >
-          {config.icon}
+          <LocationTypeIcon
+            type={location.type}
+            size={compact ? 19 : 22}
+          />
         </span>
 
         <div
@@ -1619,7 +1683,9 @@ function LocationCard({
             cursor: "pointer",
           }}
         >
-          {isFavorite ? "★" : "☆"}
+          <StarIcon
+            filled={isFavorite}
+          />
         </button>
       </div>
 
@@ -1653,7 +1719,8 @@ function LocationCard({
             fontWeight: 850,
           }}
         >
-          📍 Portami qui
+          <NavigationIcon />
+          Portami qui
         </a>
 
         {location.externalUrl && (
@@ -1701,8 +1768,21 @@ function EmptyState({
         textAlign: "center",
       }}
     >
-      <span style={{ fontSize: 35 }}>
-        🗺️
+      <span
+        style={{
+          width: 58,
+          height: 58,
+          display: "grid",
+          placeItems: "center",
+          margin: "0 auto",
+          borderRadius: 19,
+          background:
+            theme.colors.primarySoft,
+          color:
+            theme.colors.primary,
+        }}
+      >
+        <MapIcon size={28} />
       </span>
 
       <h2
@@ -1745,6 +1825,192 @@ function EmptyState({
         Azzera filtri
       </button>
     </div>
+  );
+}
+
+
+type IconProps = {
+  size?: number;
+};
+
+function IconBase({
+  children,
+  size = 18,
+  fill = "none",
+}: IconProps & {
+  children: ReactNode;
+  fill?: string;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill={fill}
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {children}
+    </svg>
+  );
+}
+
+function LocationTypeIcon({
+  type,
+  size = 20,
+}: {
+  type: MapLocationType;
+  size?: number;
+}) {
+  if (type === "city") {
+    return (
+      <IconBase size={size}>
+        <path d="M4 21V9l5-3v15" />
+        <path d="M9 21V4l7 3v14" />
+        <path d="M16 21v-8l4-2v10" />
+        <path d="M2 21h20" />
+      </IconBase>
+    );
+  }
+
+  if (type === "beach") {
+    return (
+      <IconBase size={size}>
+        <circle cx="17" cy="6" r="3" />
+        <path d="M3 17c3-2 6-2 9 0s6 2 9 0" />
+        <path d="M4 21h16" />
+        <path d="M8 15c1-4 3-7 6-9" />
+      </IconBase>
+    );
+  }
+
+  if (type === "ruins") {
+    return (
+      <IconBase size={size}>
+        <path d="M4 20h16" />
+        <path d="m6 20 2-4h8l2 4" />
+        <path d="m8 16 2-4h4l2 4" />
+        <path d="m10 12 2-5 2 5" />
+      </IconBase>
+    );
+  }
+
+  if (type === "cenote") {
+    return (
+      <IconBase size={size}>
+        <path d="M12 3s6 7 6 12a6 6 0 1 1-12 0c0-5 6-12 6-12Z" />
+      </IconBase>
+    );
+  }
+
+  if (type === "ferry") {
+    return (
+      <IconBase size={size}>
+        <path d="M4 13 12 5l8 8" />
+        <path d="M6 13h12l-2 6H8Z" />
+        <path d="M3 21c2-1 4-1 6 0 2-1 4-1 6 0 2-1 4-1 6 0" />
+      </IconBase>
+    );
+  }
+
+  if (type === "accommodation") {
+    return (
+      <IconBase size={size}>
+        <path d="M3 19v-8" />
+        <path d="M21 19v-6a3 3 0 0 0-3-3H7a4 4 0 0 0-4 4" />
+        <path d="M3 16h18" />
+        <path d="M7 10V7h5a3 3 0 0 1 3 3" />
+      </IconBase>
+    );
+  }
+
+  return (
+    <IconBase size={size}>
+      <path d="M7 3v8" />
+      <path d="M4 3v5a3 3 0 0 0 6 0V3" />
+      <path d="M7 11v10" />
+      <path d="M17 3v18" />
+      <path d="M17 3c3 2 3 7 0 9" />
+    </IconBase>
+  );
+}
+
+function MapIcon(
+  props: IconProps,
+) {
+  return (
+    <IconBase {...props}>
+      <path d="m3.5 6.2 4.8-2 7.5 2 4.7-2v13.6l-4.7 2-7.5-2-4.8 2Z" />
+      <path d="M8.3 4.2v13.6" />
+      <path d="M15.8 6.2v13.6" />
+    </IconBase>
+  );
+}
+
+function PinIcon(
+  props: IconProps,
+) {
+  return (
+    <IconBase {...props}>
+      <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+      <circle
+        cx="12"
+        cy="10"
+        r="2.5"
+      />
+    </IconBase>
+  );
+}
+
+function StarIcon({
+  size = 18,
+  filled = false,
+}: IconProps & {
+  filled?: boolean;
+}) {
+  return (
+    <IconBase
+      size={size}
+      fill={
+        filled
+          ? "currentColor"
+          : "none"
+      }
+    >
+      <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z" />
+    </IconBase>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <IconBase size={18}>
+      <circle
+        cx="11"
+        cy="11"
+        r="6.5"
+      />
+      <path d="m16 16 4 4" />
+    </IconBase>
+  );
+}
+
+function ChevronDownIcon() {
+  return (
+    <IconBase size={18}>
+      <path d="m7 10 5 5 5-5" />
+    </IconBase>
+  );
+}
+
+function NavigationIcon() {
+  return (
+    <IconBase size={15}>
+      <path d="m3.5 11 17-8-8 17-1.9-7.1Z" />
+    </IconBase>
   );
 }
 
