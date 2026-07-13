@@ -2,6 +2,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type ReactNode,
 } from "react";
 import { useFirebaseAuth } from "../components/FirebaseAuthGate";
 import {
@@ -392,16 +393,16 @@ function Budget() {
         minHeight: "100vh",
         boxSizing: "border-box",
         padding:
-          "calc(23px + env(safe-area-inset-top)) 18px calc(165px + env(safe-area-inset-bottom))",
+          "calc(21px + env(safe-area-inset-top)) 18px calc(168px + env(safe-area-inset-bottom))",
         background: `
           radial-gradient(
             circle at 92% 4%,
-            rgba(244,213,141,0.12),
+            rgba(246,217,144,0.11),
             transparent 27%
           ),
           radial-gradient(
             circle at 5% 42%,
-            rgba(17,197,191,0.09),
+            rgba(32,206,198,0.08),
             transparent 26%
           ),
           linear-gradient(
@@ -431,7 +432,8 @@ function Budget() {
                 margin: 0,
                 color:
                   theme.colors.primary,
-                fontSize: 11,
+                fontSize:
+                  theme.typography.eyebrow,
                 fontWeight: 900,
                 letterSpacing: 1.6,
                 textTransform:
@@ -444,7 +446,8 @@ function Budget() {
             <h1
               style={{
                 margin: "7px 0 0",
-                fontSize: 34,
+                fontSize:
+                  theme.typography.display,
                 lineHeight: 1,
                 letterSpacing: -1,
               }}
@@ -458,7 +461,8 @@ function Budget() {
                 maxWidth: 280,
                 color:
                   theme.colors.textSoft,
-                fontSize: 13,
+                fontSize:
+                  theme.typography.body,
                 lineHeight: 1.5,
               }}
             >
@@ -469,23 +473,25 @@ function Budget() {
           </div>
 
           <div
+            aria-hidden="true"
             style={{
-              width: 55,
-              height: 55,
+              width: 54,
+              height: 54,
               display: "grid",
               placeItems: "center",
               flexShrink: 0,
               borderRadius: 18,
               background:
-                "linear-gradient(135deg, rgba(244,213,141,0.22), rgba(17,197,191,0.17))",
+                "linear-gradient(135deg, rgba(246,217,144,0.20), rgba(32,206,198,0.14))",
               border:
-                "1px solid rgba(255,255,255,0.11)",
+                `1px solid ${theme.colors.borderStrong}`,
               boxShadow:
-                "0 14px 32px rgba(0,0,0,0.22)",
-              fontSize: 25,
+                theme.shadows.card,
+              color:
+                theme.colors.secondary,
             }}
           >
-            💰
+            <WalletIcon size={26} />
           </div>
         </div>
       </header>
@@ -587,11 +593,12 @@ function Budget() {
         style={{
           position: "relative",
           overflow: "hidden",
-          marginTop: 24,
-          padding: 23,
-          borderRadius: 28,
+          marginTop: 20,
+          padding: 20,
+          borderRadius:
+            theme.radius.xl,
           background:
-            "linear-gradient(140deg, rgba(17,197,191,0.98), rgba(14,102,126,0.97) 50%, rgba(8,48,78,0.98))",
+            "linear-gradient(140deg, rgba(32,206,198,0.98), rgba(14,102,126,0.97) 50%, rgba(8,48,78,0.99))",
           border:
             "1px solid rgba(255,255,255,0.13)",
           boxShadow:
@@ -632,7 +639,8 @@ function Budget() {
             position: "relative",
             display: "block",
             marginTop: 10,
-            fontSize: 43,
+            fontSize:
+              "clamp(36px, 11vw, 44px)",
             lineHeight: 1,
             letterSpacing: -1.5,
           }}
@@ -679,18 +687,38 @@ function Budget() {
 
       <section
         style={{
-          display: "flex",
+          display: "grid",
+          gridTemplateColumns:
+            "38px 1fr auto",
           alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
+          gap: 11,
           marginTop: 12,
           padding: 11,
           borderRadius: 17,
-          background: "rgba(255,255,255,0.055)",
-          border: "1px solid rgba(255,255,255,0.08)",
+          background:
+            theme.colors.cardSoft,
+          border:
+            `1px solid ${theme.colors.border}`,
         }}
       >
-        <div>
+        <span
+          aria-hidden="true"
+          style={{
+            width: 38,
+            height: 38,
+            display: "grid",
+            placeItems: "center",
+            borderRadius: 12,
+            background:
+              theme.colors.secondarySoft,
+            color:
+              theme.colors.secondary,
+          }}
+        >
+          <ExchangeIcon />
+        </span>
+
+        <div style={{ minWidth: 0 }}>
           <strong
             style={{
               display: "block",
@@ -704,11 +732,16 @@ function Budget() {
             style={{
               display: "block",
               marginTop: 3,
-              color: theme.colors.textSoft,
+              color:
+                theme.colors.textSoft,
               fontSize: 9,
             }}
           >
-            1 € = {eurMxnRate.toLocaleString("it-IT")} MXN
+            1 € ={" "}
+            {eurMxnRate.toLocaleString(
+              "it-IT",
+            )}{" "}
+            MXN
           </span>
         </div>
 
@@ -753,9 +786,17 @@ function Budget() {
               : "1px solid transparent",
           }}
         >
-          {showExpenseForm
-            ? "× Chiudi"
-            : "+ Nuova spesa"}
+          {showExpenseForm ? (
+            <>
+              <CloseIcon />
+              Chiudi
+            </>
+          ) : (
+            <>
+              <PlusIcon />
+              Nuova spesa
+            </>
+          )}
         </button>
 
         <button
@@ -784,7 +825,8 @@ function Budget() {
                 : "1px solid rgba(110,212,255,0.18)",
           }}
         >
-          👥 {people.length} partecipanti
+          <UsersIcon />
+          {people.length} partecipanti
         </button>
       </div>
 
@@ -823,7 +865,7 @@ function Budget() {
             }}
           >
             {people.map(
-              (person, index) => (
+              (person) => (
                 <div
                   key={person}
                   style={{
@@ -835,6 +877,7 @@ function Budget() {
                   }}
                 >
                   <span
+                    aria-hidden="true"
                     style={{
                       width: 37,
                       height: 37,
@@ -843,13 +886,19 @@ function Budget() {
                         "center",
                       borderRadius: 12,
                       background:
-                        "rgba(110,212,255,0.12)",
-                      color: "#6ED4FF",
+                        "rgba(116,215,255,0.12)",
+                      color:
+                        theme.colors.info,
                       fontSize: 12,
-                      fontWeight: 900,
+                      fontWeight: 950,
                     }}
                   >
-                    {index + 1}
+                    {person
+                      .split(" ")
+                      .map((part) => part[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
                   </span>
 
                   <div
@@ -1249,7 +1298,7 @@ function Budget() {
         >
           {expenses.length === 0 ? (
             <EmptyCard
-              icon="💸"
+              icon={<TransferIcon size={28} />}
               title="Nessun rimborso"
               text="Inserisci una spesa per calcolare automaticamente i conti."
             />
@@ -1268,8 +1317,16 @@ function Budget() {
                 fontWeight: 850,
               }}
             >
-              ✓ Tutti i conti sono già in
-              pari.
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <CheckCircleIcon />
+                Tutti i conti sono già in pari.
+              </span>
             </div>
           ) : (
             <div
@@ -1304,6 +1361,7 @@ function Budget() {
                       }}
                     >
                       <span
+                        aria-hidden="true"
                         style={{
                           width: 45,
                           height: 45,
@@ -1312,11 +1370,12 @@ function Budget() {
                             "center",
                           borderRadius: 15,
                           background:
-                            "rgba(244,213,141,0.13)",
-                          fontSize: 21,
+                            theme.colors.secondarySoft,
+                          color:
+                            theme.colors.secondary,
                         }}
                       >
-                        💸
+                        <TransferIcon />
                       </span>
 
                       <div>
@@ -1369,7 +1428,7 @@ function Budget() {
 
       <section
         style={{
-          marginTop: 28,
+          marginTop: 24,
         }}
       >
         <SectionHeading
@@ -1381,8 +1440,8 @@ function Budget() {
         <div
           style={{
             display: "grid",
-            gap: 9,
-            marginTop: 14,
+            gap: 7,
+            marginTop: 12,
           }}
         >
           {people.map((person) => {
@@ -1399,8 +1458,15 @@ function Budget() {
               isPositive
                 ? theme.colors.primary
                 : isNegative
-                  ? "#FF9D9D"
+                  ? theme.colors.danger
                   : theme.colors.textSoft;
+
+            const statusText =
+              isPositive
+                ? "Deve ricevere"
+                : isNegative
+                  ? "Deve pagare"
+                  : "In pari";
 
             return (
               <article
@@ -1408,22 +1474,58 @@ function Budget() {
                 style={{
                   display: "grid",
                   gridTemplateColumns:
-                    "1fr auto",
+                    "38px minmax(0, 1fr) auto",
                   alignItems: "center",
-                  gap: 12,
-                  padding: 14,
-                  borderRadius: 19,
+                  gap: 10,
+                  padding: "10px 12px",
+                  borderRadius: 16,
                   background:
-                    "rgba(255,255,255,0.055)",
-                  border:
-                    "1px solid rgba(255,255,255,0.075)",
+                    "rgba(255,255,255,0.048)",
+                  border: `1px solid ${
+                    isPositive
+                      ? "rgba(32,206,198,0.16)"
+                      : isNegative
+                        ? "rgba(255,155,155,0.16)"
+                        : theme.colors.border
+                  }`,
                 }}
               >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: 38,
+                    height: 38,
+                    display: "grid",
+                    placeItems: "center",
+                    borderRadius: 13,
+                    background:
+                      isPositive
+                        ? theme.colors.primarySoft
+                        : isNegative
+                          ? "rgba(255,155,155,0.12)"
+                          : "rgba(116,215,255,0.09)",
+                    color: balanceColor,
+                    fontSize: 13,
+                    fontWeight: 950,
+                    letterSpacing: 0.2,
+                  }}
+                >
+                  {getPersonInitials(person)}
+                </span>
 
-                <div>
+                <div
+                  style={{
+                    minWidth: 0,
+                  }}
+                >
                   <strong
                     style={{
-                      fontSize: 14,
+                      display: "block",
+                      overflow: "hidden",
+                      fontSize: 13,
+                      lineHeight: 1.25,
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {person}
@@ -1432,24 +1534,22 @@ function Budget() {
                   <span
                     style={{
                       display: "block",
-                      marginTop: 4,
-                      color:
-                        theme.colors.textSoft,
-                      fontSize: 10,
+                      marginTop: 3,
+                      color: balanceColor,
+                      fontSize: 9,
+                      fontWeight: 750,
                     }}
                   >
-                    {isPositive
-                      ? "Deve ricevere"
-                      : isNegative
-                        ? "Deve pagare"
-                        : "In pari"}
+                    {statusText}
                   </span>
                 </div>
 
                 <strong
                   style={{
                     color: balanceColor,
-                    fontSize: 15,
+                    fontSize: 14,
+                    lineHeight: 1.2,
+                    whiteSpace: "nowrap",
                   }}
                 >
                   {isPositive ? "+" : ""}
@@ -1475,14 +1575,18 @@ function Budget() {
         >
           <p
             style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
               margin: 0,
-              color: "#C3A8FF",
+              color: "#C7AEFF",
               fontSize: 10,
               fontWeight: 900,
               letterSpacing: 0.9,
               textTransform: "uppercase",
             }}
           >
+            <ReceiptIcon size={15} />
             Ultima spesa
           </p>
 
@@ -1559,7 +1663,7 @@ function Budget() {
 
             <strong
               style={{
-                color: "#C3A8FF",
+                color: "#C7AEFF",
                 fontSize: 18,
               }}
             >
@@ -1619,7 +1723,7 @@ function Budget() {
         >
           {expenses.length === 0 ? (
             <EmptyCard
-              icon="🧾"
+              icon={<ReceiptIcon size={28} />}
               title="Nessuna spesa"
               text={isSharedMode ? "Le spese inserite dal gruppo appariranno qui in tempo reale." : "Le spese registrate su questo telefono appariranno qui."}
             />
@@ -1654,6 +1758,7 @@ function Budget() {
                       }}
                     >
                       <span
+                        aria-hidden="true"
                         style={{
                           width: 44,
                           height: 44,
@@ -1663,11 +1768,12 @@ function Budget() {
                           flexShrink: 0,
                           borderRadius: 14,
                           background:
-                            "rgba(17,197,191,0.12)",
-                          fontSize: 20,
+                            theme.colors.primarySoft,
+                          color:
+                            theme.colors.primary,
                         }}
                       >
-                        🧾
+                        <ReceiptIcon />
                       </span>
 
                       <div
@@ -1776,7 +1882,16 @@ function Budget() {
                               cursor: "pointer",
                             }}
                           >
-                            Elimina
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 5,
+                              }}
+                            >
+                              <TrashIcon size={13} />
+                              Elimina
+                            </span>
                           </button>
                         )}
                       </div>
@@ -1808,7 +1923,7 @@ function BudgetSyncCard({
   const configuration = (() => {
     if (!isSharedMode) {
       return {
-        icon: "📱",
+        icon: <PhoneIcon />,
         title: "Solo su questo telefono",
         text:
           "Le spese restano locali finché non accedi con Google.",
@@ -1820,7 +1935,7 @@ function BudgetSyncCard({
       status === "unauthorized"
     ) {
       return {
-        icon: "🔒",
+        icon: <LockIcon />,
         title: "Account non autorizzato",
         text:
           error ||
@@ -1831,7 +1946,7 @@ function BudgetSyncCard({
 
     if (status === "error") {
       return {
-        icon: "⚠️",
+        icon: <AlertIcon />,
         title: "Errore di sincronizzazione",
         text:
           error ||
@@ -1845,7 +1960,7 @@ function BudgetSyncCard({
       !isOnline
     ) {
       return {
-        icon: "☁️",
+        icon: <CloudIcon />,
         title: "Offline — modifiche in coda",
         text:
           "Le spese restano disponibili e verranno sincronizzate al ritorno della connessione.",
@@ -1858,7 +1973,7 @@ function BudgetSyncCard({
       status === "syncing"
     ) {
       return {
-        icon: "◌",
+        icon: <SyncIcon />,
         title:
           status === "loading"
             ? "Caricamento Budget condiviso"
@@ -1870,7 +1985,7 @@ function BudgetSyncCard({
     }
 
     return {
-      icon: "●",
+      icon: <CheckCircleIcon />,
       title: "Budget condiviso sincronizzato",
       text: accountLabel,
       color: theme.colors.primary,
@@ -1904,8 +2019,8 @@ function BudgetSyncCard({
           borderRadius: 14,
           background:
             `${configuration.color}17`,
-          color: configuration.color,
-          fontSize: 18,
+          color:
+            configuration.color,
         }}
       >
         {configuration.icon}
@@ -2226,61 +2341,109 @@ function SmallTextButton({
   );
 }
 
+function getPersonInitials(
+  name: string,
+) {
+  const words = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (words.length === 0) {
+    return "?";
+  }
+
+  if (words.length === 1) {
+    return words[0]
+      .slice(0, 2)
+      .toLocaleUpperCase("it");
+  }
+
+  return `${words[0][0]}${
+    words[words.length - 1][0]
+  }`.toLocaleUpperCase("it");
+}
+
 function EmptyCard({
   icon,
   title,
   text,
 }: {
-  icon: string;
+  icon: ReactNode;
   title: string;
   text: string;
 }) {
   return (
     <div
       style={{
-        padding: 24,
-        borderRadius: 22,
+        display: "grid",
+        gridTemplateColumns:
+          "46px minmax(0, 1fr)",
+        alignItems: "center",
+        gap: 13,
+        padding: 15,
+        borderRadius: 18,
         background:
-          "rgba(255,255,255,0.055)",
+          "rgba(255,255,255,0.050)",
         border:
-          "1px solid rgba(255,255,255,0.075)",
-        textAlign: "center",
+          `1px solid ${theme.colors.border}`,
+        textAlign: "left",
       }}
     >
       <span
+        aria-hidden="true"
         style={{
-          fontSize: 34,
+          width: 46,
+          height: 46,
+          display: "grid",
+          placeItems: "center",
+          borderRadius: 15,
+          background:
+            theme.colors.primarySoft,
+          color:
+            theme.colors.primary,
         }}
       >
         {icon}
       </span>
 
-      <h3
+      <div
         style={{
-          margin: "12px 0 0",
-          fontSize: 18,
+          minWidth: 0,
         }}
       >
-        {title}
-      </h3>
+        <h3
+          style={{
+            margin: 0,
+            fontSize: 15,
+            lineHeight: 1.25,
+          }}
+        >
+          {title}
+        </h3>
 
-      <p
-        style={{
-          margin: "7px 0 0",
-          color:
-            theme.colors.textSoft,
-          fontSize: 12,
-          lineHeight: 1.5,
-        }}
-      >
-        {text}
-      </p>
+        <p
+          style={{
+            margin: "5px 0 0",
+            color:
+              theme.colors.textSoft,
+            fontSize: 11,
+            lineHeight: 1.45,
+          }}
+        >
+          {text}
+        </p>
+      </div>
     </div>
   );
 }
 
 const actionButtonStyle = {
   minHeight: 49,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 7,
   padding: "12px 10px",
   borderRadius: 16,
   fontSize: 13,
@@ -2293,7 +2456,7 @@ const formSectionStyle = {
   padding: 19,
   borderRadius: 23,
   background:
-    "rgba(255,255,255,0.06)",
+    theme.colors.cardSoft,
   boxShadow:
     "0 14px 34px rgba(0,0,0,0.14)",
 };
@@ -2312,13 +2475,212 @@ const inputStyle = {
   marginTop: 8,
   padding: "13px 14px",
   border:
-    "1px solid rgba(255,255,255,0.12)",
+    `1px solid ${theme.colors.borderStrong}`,
   borderRadius: 14,
   outline: "none",
   background:
-    "rgba(7,26,46,0.68)",
+    "rgba(5,24,39,0.72)",
   color: theme.colors.text,
   fontSize: 15,
 };
+
+type IconProps = {
+  size?: number;
+};
+
+function IconBase({
+  children,
+  size = 18,
+}: IconProps & {
+  children: ReactNode;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {children}
+    </svg>
+  );
+}
+
+function WalletIcon(
+  props: IconProps,
+) {
+  return (
+    <IconBase {...props}>
+      <path d="M4 6.6A2.6 2.6 0 0 1 6.6 4H18a2 2 0 0 1 2 2v2H7.1a3.1 3.1 0 0 0 0 6.2H20v3.7a2 2 0 0 1-2 2H6.6A2.6 2.6 0 0 1 4 17.3Z" />
+      <path d="M20 8H7.1a3.1 3.1 0 0 0 0 6.2H20Z" />
+      <circle
+        cx="16.5"
+        cy="11.1"
+        r="0.8"
+        fill="currentColor"
+        stroke="none"
+      />
+    </IconBase>
+  );
+}
+
+function ExchangeIcon(
+  props: IconProps,
+) {
+  return (
+    <IconBase {...props}>
+      <path d="M7 7h12" />
+      <path d="m16 4 3 3-3 3" />
+      <path d="M17 17H5" />
+      <path d="m8 20-3-3 3-3" />
+    </IconBase>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <IconBase size={16}>
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </IconBase>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <IconBase size={16}>
+      <path d="m6 6 12 12" />
+      <path d="M18 6 6 18" />
+    </IconBase>
+  );
+}
+
+function UsersIcon() {
+  return (
+    <IconBase size={17}>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </IconBase>
+  );
+}
+
+function TransferIcon(
+  props: IconProps,
+) {
+  return (
+    <IconBase {...props}>
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="12" r="3" />
+      <path d="M9 9h6" />
+      <path d="m13 7 2 2-2 2" />
+      <path d="M15 15H9" />
+      <path d="m11 13-2 2 2 2" />
+    </IconBase>
+  );
+}
+
+function ReceiptIcon(
+  props: IconProps,
+) {
+  return (
+    <IconBase {...props}>
+      <path d="M6 3h12v18l-3-2-3 2-3-2-3 2Z" />
+      <path d="M9 8h6" />
+      <path d="M9 12h6" />
+      <path d="M9 16h4" />
+    </IconBase>
+  );
+}
+
+function TrashIcon(
+  props: IconProps,
+) {
+  return (
+    <IconBase {...props}>
+      <path d="M4 7h16" />
+      <path d="M9 7V4h6v3" />
+      <path d="m6 7 1 14h10l1-14" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </IconBase>
+  );
+}
+
+function PhoneIcon() {
+  return (
+    <IconBase>
+      <rect
+        x="7"
+        y="2.5"
+        width="10"
+        height="19"
+        rx="2"
+      />
+      <path d="M10 5h4" />
+      <path d="M11.5 18.5h1" />
+    </IconBase>
+  );
+}
+
+function LockIcon() {
+  return (
+    <IconBase>
+      <rect
+        x="5"
+        y="10"
+        width="14"
+        height="11"
+        rx="2"
+      />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </IconBase>
+  );
+}
+
+function AlertIcon() {
+  return (
+    <IconBase>
+      <path d="M12 3 2.5 20h19Z" />
+      <path d="M12 9v5" />
+      <path d="M12 17h.01" />
+    </IconBase>
+  );
+}
+
+function CloudIcon() {
+  return (
+    <IconBase>
+      <path d="M6 18h11a4 4 0 0 0 .6-8A6 6 0 0 0 6.2 8.2 4.9 4.9 0 0 0 6 18Z" />
+      <path d="M9 14h6" />
+    </IconBase>
+  );
+}
+
+function SyncIcon() {
+  return (
+    <IconBase>
+      <path d="M20 7v5h-5" />
+      <path d="M4 17v-5h5" />
+      <path d="M6.1 8a7 7 0 0 1 11.6-2L20 8" />
+      <path d="M17.9 16a7 7 0 0 1-11.6 2L4 16" />
+    </IconBase>
+  );
+}
+
+function CheckCircleIcon() {
+  return (
+    <IconBase>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8 12 2.5 2.5L16 9" />
+    </IconBase>
+  );
+}
 
 export default Budget;
