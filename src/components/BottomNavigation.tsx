@@ -1,8 +1,4 @@
-import type {
-  CSSProperties,
-  ReactNode,
-} from "react";
-import { theme } from "../styles/theme";
+import type { ReactNode } from "react";
 
 export type Tab =
   | "home"
@@ -28,31 +24,31 @@ const navigationItems: NavigationItem[] = [
     id: "home",
     label: "Home",
     icon: <HomeIcon />,
-    accent: theme.colors.primary,
+    accent: "#11C5BF",
   },
   {
     id: "map",
     label: "Mappa",
     icon: <MapIcon />,
-    accent: theme.colors.info,
+    accent: "#6ED4FF",
   },
   {
     id: "itinerary",
     label: "Itinerario",
     icon: <CalendarIcon />,
-    accent: theme.colors.secondary,
+    accent: "#F4D58D",
   },
   {
     id: "budget",
     label: "Budget",
     icon: <WalletIcon />,
-    accent: theme.colors.warning,
+    accent: "#FFB86B",
   },
   {
     id: "more",
     label: "Altro",
     icon: <MoreIcon />,
-    accent: "#C7AEFF",
+    accent: "#C3A8FF",
   },
 ];
 
@@ -60,17 +56,53 @@ function BottomNavigation({
   activeTab,
   onChange,
 }: BottomNavigationProps) {
+  function handleNavigation(tab: Tab) {
+    if (
+      tab === "more" &&
+      activeTab === "more"
+    ) {
+      window.dispatchEvent(
+        new Event(
+          "ruta-maya:open-tools-menu",
+        ),
+      );
+    }
+
+    onChange(tab);
+  }
+
   return (
     <nav
       aria-label="Navigazione principale"
-      style={navigationStyle}
+      style={{
+        position: "fixed",
+        left: 12,
+        right: 12,
+        bottom:
+          "calc(9px + env(safe-area-inset-bottom))",
+        zIndex: 4000,
+        maxWidth: 690,
+        margin: "0 auto",
+        padding: 7,
+        border:
+          "1px solid rgba(255,255,255,0.12)",
+        borderRadius: 27,
+        background:
+          "linear-gradient(180deg, rgba(8,27,46,0.91), rgba(4,17,31,0.94))",
+        boxShadow:
+          "0 22px 55px rgba(0,0,0,0.46), inset 0 1px 0 rgba(255,255,255,0.055)",
+        backdropFilter:
+          "blur(26px) saturate(155%)",
+        WebkitBackdropFilter:
+          "blur(26px) saturate(155%)",
+      }}
     >
       <div
         style={{
           display: "grid",
           gridTemplateColumns:
             "repeat(5, minmax(0, 1fr))",
-          gap: 3,
+          gap: 4,
         }}
       >
         {navigationItems.map((item) => {
@@ -87,87 +119,95 @@ function BottomNavigation({
                   ? "page"
                   : undefined
               }
-              title={item.label}
               onClick={() =>
-                onChange(item.id)
+                handleNavigation(item.id)
               }
               style={{
                 position: "relative",
                 minWidth: 0,
-                minHeight: 54,
+                minHeight: 59,
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent:
                   "center",
-                gap: 3,
-                padding: "5px 2px 4px",
+                gap: 4,
+                padding: "7px 3px",
                 border: 0,
-                borderRadius: 18,
-                outline: "none",
+                borderRadius: 20,
                 background: isActive
                   ? `linear-gradient(
                       180deg,
-                      ${item.accent}22,
-                      ${item.accent}0D
+                      ${item.accent}20,
+                      ${item.accent}0A
                     )`
                   : "transparent",
                 color: isActive
                   ? item.accent
-                  : theme.colors.textMuted,
+                  : "rgba(255,255,255,0.52)",
                 cursor: "pointer",
+                overflow: "hidden",
+                transition:
+                  "background 180ms ease, color 180ms ease, transform 160ms ease",
                 WebkitTapHighlightColor:
                   "transparent",
-                touchAction: "manipulation",
-                transition: `
-                  background ${theme.motion.fast},
-                  color ${theme.motion.fast},
-                  transform ${theme.motion.fast}
-                `,
               }}
             >
               {isActive && (
-                <span
-                  aria-hidden="true"
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: "50%",
-                    width: 24,
-                    height: 2,
-                    borderRadius:
-                      "0 0 999px 999px",
-                    background:
-                      item.accent,
-                    boxShadow: `0 0 13px ${item.accent}99`,
-                    transform:
-                      "translateX(-50%)",
-                  }}
-                />
+                <>
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      position:
+                        "absolute",
+                      top: 0,
+                      left: "50%",
+                      width: 25,
+                      height: 3,
+                      borderRadius:
+                        "0 0 999px 999px",
+                      background:
+                        item.accent,
+                      boxShadow: `0 0 15px ${item.accent}B3`,
+                      transform:
+                        "translateX(-50%)",
+                    }}
+                  />
+
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      position:
+                        "absolute",
+                      top: 8,
+                      left: "50%",
+                      width: 42,
+                      height: 42,
+                      borderRadius:
+                        "50%",
+                      background: `${item.accent}12`,
+                      filter: "blur(5px)",
+                      transform:
+                        "translateX(-50%)",
+                    }}
+                  />
+                </>
               )}
 
               <span
                 aria-hidden="true"
                 style={{
                   position: "relative",
-                  width: 31,
-                  height: 31,
+                  zIndex: 1,
+                  width: 28,
+                  height: 28,
                   display: "grid",
                   placeItems: "center",
-                  borderRadius: 11,
-                  background: isActive
-                    ? `${item.accent}16`
-                    : "transparent",
-                  boxShadow: isActive
-                    ? `inset 0 0 0 1px ${item.accent}1C`
-                    : "none",
                   transform: isActive
-                    ? "translateY(-1px)"
-                    : "translateY(0)",
-                  transition: `
-                    transform ${theme.motion.normal},
-                    background ${theme.motion.fast}
-                  `,
+                    ? "translateY(-1px) scale(1.08)"
+                    : "scale(1)",
+                  transition:
+                    "transform 190ms cubic-bezier(0.22,1,0.36,1)",
                 }}
               >
                 {item.icon}
@@ -175,19 +215,20 @@ function BottomNavigation({
 
               <span
                 style={{
+                  position: "relative",
+                  zIndex: 1,
                   maxWidth: "100%",
                   overflow: "hidden",
                   textOverflow:
                     "ellipsis",
                   whiteSpace: "nowrap",
-                  fontSize: isActive
-                    ? 10
-                    : 9.5,
-                  lineHeight: 1.05,
+                  fontSize: 9.5,
                   fontWeight: isActive
                     ? 900
-                    : 750,
-                  letterSpacing: 0.05,
+                    : 700,
+                  letterSpacing: 0.1,
+                  transition:
+                    "font-weight 180ms ease",
                 }}
               >
                 {item.label}
@@ -200,37 +241,13 @@ function BottomNavigation({
   );
 }
 
-const navigationStyle: CSSProperties = {
-  position: "fixed",
-  left: 10,
-  right: 10,
-  bottom:
-    "calc(7px + env(safe-area-inset-bottom))",
-  zIndex: 4000,
-  maxWidth: 620,
-  margin: "0 auto",
-  padding: 6,
-  border: `1px solid ${theme.colors.borderStrong}`,
-  borderRadius: 25,
-  background:
-    "linear-gradient(180deg, rgba(8,29,48,0.92), rgba(4,18,32,0.96))",
-  boxShadow: `
-    ${theme.shadows.floating},
-    inset 0 1px 0 rgba(255,255,255,0.055)
-  `,
-  backdropFilter:
-    "blur(24px) saturate(150%)",
-  WebkitBackdropFilter:
-    "blur(24px) saturate(150%)",
-};
-
 type IconProps = {
   size?: number;
 };
 
 function IconBase({
   children,
-  size = 22,
+  size = 23,
 }: IconProps & {
   children: ReactNode;
 }) {
@@ -241,7 +258,7 @@ function IconBase({
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.9"
+      strokeWidth="1.85"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
